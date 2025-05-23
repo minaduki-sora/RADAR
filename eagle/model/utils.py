@@ -235,7 +235,7 @@ def initialize_tree(input_ids, model, past_key_values, logits_processor):
     )
 
     if logits_processor is not None:
-        logits = orig[:, -1]
+        logits = orig[:, -1] #orig.shape = (batch_size, seq_len, vocab_size)
         logits = logits_processor(None, logits)
         probabilities = torch.nn.functional.softmax(logits, dim=1)
         token = torch.multinomial(probabilities, 1)
@@ -359,6 +359,7 @@ def evaluate_posterior(
     if logits_processor is None:
         # Find the tokens that match the maximum logits for each position in the sequence
         posterior_mask = (
+                # candidates去掉第一列是因为第一列为根结点，是大模型生成的；logits去掉最后一列是因为最后一列也是大模型生成的
                 candidates[:, 1:].to(logits.device) == torch.argmax(logits[:, :-1], dim=-1)
         ).int()
         candidates_accept_length = (torch.cumprod(posterior_mask, dim=1)).sum(dim=1)
@@ -379,8 +380,8 @@ def evaluate_posterior(
             if i != accept_length:
                 break
             adjustflag = False
-            is_eq = (candidates[:, :accept_length] == accept_cand).all(dim=1)
-            fi = torch.nonzero(is_eq, as_tuple=True)[0][0]
+            is_eq = (candidates[:, :accept_length] == accept_cand).all(dim=1) #判断与当前前缀是否符合
+            fi = torch.nonzero(is_eq, as_tuple=True)[0][0] #torch.nonzero(is_eq, as_tuple=True)得到符合的路径索引，相同前缀有相同logits，任取一个即可
             gt_logits = logits[fi, i - 1][None]
             gt_logits = logits_processor(None, gt_logits)[0]
             gtp = torch.softmax(gt_logits, dim=0)
@@ -408,8 +409,8 @@ def evaluate_posterior(
         if adjustflag and accept_length != candidates.shape[1]:
             sample_p = gtp
         else:
-            gt_logits = logits[best_candidate, accept_length - 1]
-            gt_logits = logits_processor(None, gt_logits)
+            gt_logits = logits[best_candidate, accept_length - 1][None]
+            gt_logits = logits_processor(None, gt_logits)[0] #fix
             sample_p = torch.softmax(gt_logits, dim=0)
         return torch.tensor(best_candidate), accept_length - 1, sample_p
 

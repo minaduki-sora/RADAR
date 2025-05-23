@@ -85,7 +85,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     if n_rep == 1:
         return hidden_states
     hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
-    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)#different from llama3
 
 
 def rotate_half(x):
@@ -753,17 +753,22 @@ class Model(nn.Module):
         draft_tokens = ss_token_list[top_scores_index]
         draft_tokens = torch.cat((sample_token, draft_tokens), dim=0)
 
+        #top_scores_index为从所有非根结点中选出的索引，因此除以top_k得到的结果是父节点的索引
         draft_parents = torch.cat(parents_list, dim=0)[top_scores_index // top_k].long()
         mask_index = torch.searchsorted(top_scores_index, draft_parents - 1, right=False)
         # mask_index[(top_scores_index[mask_index]!=draft_parents - 1)]=-1
+        # mask_index是draft_parents在top_scores_index中按0号节点序的索引
         mask_index[draft_parents == 0] = -1
-        mask_index = mask_index + 1
+        mask_index = mask_index + 1 #加一考虑0号根结点
         mask_index_list = mask_index.tolist()
         # with Timer("mask"):
         tree_mask = torch.eye(total_tokens + 1).bool()
         tree_mask[:, 0] = True
         for i in range(total_tokens):
+            # 从浅至深将当前结点的父节点的mask加上去得到当前结点的mask，加一因为考虑根结点
             tree_mask[i + 1].add_(tree_mask[mask_index_list[i]])
+            # print(tree_mask[i + 1].long())
+            # 父节点如果有子节点在top_k中，是否可以省略父节点的mask？
 
 
         tree_position_ids = torch.sum(tree_mask, dim=1) - 1
@@ -786,6 +791,7 @@ class Model(nn.Module):
         rid = 0
         position_ids_list = tree_position_ids.tolist()
 
+        # retrieve_indices[叶子节点的0号节点序的排序][深度] = 该叶子节点对应路径中相应深度的0号节点序
         for i in range(total_tokens + 1):
             if i not in noleaf_index:
                 cid = i
