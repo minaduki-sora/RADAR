@@ -771,7 +771,7 @@ class Model(nn.Module):
             # 父节点如果有子节点在top_k中，是否可以省略父节点的mask？
 
 
-        tree_position_ids = torch.sum(tree_mask, dim=1) - 1
+        tree_position_ids = torch.sum(tree_mask, dim=1) - 1 #减一代表根结点深度为0定义下的深度
 
         tree_mask = tree_mask.float()[None, None]
         draft_tokens = draft_tokens[None]
