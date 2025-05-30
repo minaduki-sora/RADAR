@@ -562,7 +562,7 @@ class EaModel(nn.Module):
             max_length=2048,
             log=False,
             is_llama3=False,
-
+            is_log_hidden_state=False,
     ):
         if is_llama3:
             stop_token_id = self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -598,6 +598,7 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
+        hidden_state_list = []
         draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state, sample_token = initialize_tree(
             input_ids, self, past_key_values, logits_processor
         )
@@ -656,4 +657,7 @@ class EaModel(nn.Module):
         if not log:
             return input_ids
         else:
-            return input_ids, new_token, idx, acc_len_list
+            if is_log_hidden_state:
+                return input_ids, new_token, idx, acc_len_list, hidden_state_list
+            else:
+                return input_ids, new_token, idx, acc_len_list

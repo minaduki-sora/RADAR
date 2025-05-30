@@ -229,7 +229,7 @@ def initialize_tree0(input_ids, model, past_key_values, logits_processor):
     #     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden_states, token
     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, logits, hidden_state, sample_token
 
-def initialize_tree(input_ids, model, past_key_values, logits_processor):
+def initialize_tree(input_ids, model, past_key_values, logits_processor, is_log = False):
     outputs, orig, hidden_states = model(
         input_ids, past_key_values=past_key_values, output_orig=True
     )
@@ -251,6 +251,8 @@ def initialize_tree(input_ids, model, past_key_values, logits_processor):
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
         hidden_states=torch.cat(outputs["hidden_states"],dim=-1)
     draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
+    if is_log:
+        hidden_states = [outputs["last_hidden_state"], outputs["hidden_states"]]
     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token
 
 
