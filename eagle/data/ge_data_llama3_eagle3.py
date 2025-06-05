@@ -12,6 +12,9 @@ parent_dir = os.path.dirname(script_dir)
 os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
+from datasets import Dataset, DatasetDict
+import numpy as np
+import torch
 
 import time
 
@@ -133,6 +136,7 @@ def get_model_answers(
 
     question = questions[0]
 
+    data = []
     # questions=questions[6:]
     for question in tqdm(questions):
 
@@ -165,15 +169,33 @@ def get_model_answers(
                 # torch.cuda.synchronize()
                 # start_time = time.time()
 
-                output_ids, new_token, idx, acc_len_list = model.eagenerate_log(
+                output_ids, new_token, idx, acc_len_list, hidden_list, logit_list = model.eagenerate_log(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True,
                     is_llama3=True,
+                    is_log_hidden_state=True
                 )
                 # torch.cuda.synchronize()
                 # total_time = time.time() - start_time
                 acc_len_list_list.append(acc_len_list)
+
+                # save data
+                if hasattr(args, "save_dataset"):
+                    for i in range(len(acc_len_list)):
+                        temp = {
+                            "accept_length":acc_len_list[i],
+                            "last_hidden_state":hidden_list[i][0].cpu().numpy(),
+                            "all_hidden_state":hidden_list[i][1].cpu().numpy(),
+                            "egale_1st_forward_hidden":hidden_list[i][2].cpu().numpy(),
+                            "eagle_input":hidden_list[i][3].cpu().numpy(),
+                            "last_logit":logit_list[i][0].cpu().numpy(),
+                            "egale_1st_forward_logit":logit_list[i][1].cpu().numpy()
+                        }
+                        data.append(temp)
+                    del hidden_list
+                    del logit_list
+
                 output_ids = output_ids[0][len(input_ids[0]):]
                 # be consistent with the template's stop_token_ids
                 stop_token_ids = [
@@ -214,7 +236,7 @@ def get_model_answers(
                     "content": output
                 })
             # torch.cuda.empty_cache()
-            # choices.append({"index": i, "turns": turns, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time})
+            choices.append({"index": i, "turns": turns, "idxs": idxs, "new_tokens": new_tokens})
 
         # Dump answers
         os.makedirs(os.path.dirname(answer_file), exist_ok=True)
@@ -236,6 +258,13 @@ def get_model_answers(
                 "accept_len_list": acc_len_list_list,
             }
             fout.write(json.dumps(ans_json) + "\n")
+
+    # save dataset
+    if hasattr(args, "save_dataset"):
+        dataset = Dataset.from_list(data)
+        os.makedirs(os.path.dirname(args.save_dataset), exist_ok=True)
+        dataset = dataset.train_test_split(test_size=0.2)
+        dataset.save_to_disk(args.save_dataset)
 
 
 def reorg_answer_file(answer_file):
@@ -282,6 +311,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
     parser.add_argument("--log-file", type=str, help="The output log file.")
+    parser.add_argument("--save-dataset", type=str, help="The path to save the dataset.")
     parser.add_argument(
         "--max-new-token",
         type=int,

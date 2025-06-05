@@ -250,9 +250,12 @@ def initialize_tree(input_ids, model, past_key_values, logits_processor, is_log 
         if outputs["hidden_states"][0].device != ea_device:
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
         hidden_states=torch.cat(outputs["hidden_states"],dim=-1)
-    draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
     if is_log:
-        hidden_states = [outputs["last_hidden_state"], outputs["hidden_states"]]
+        llm_logit = orig[:, -1] if logits_processor is None else probabilities
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit = model.ea_layer.topK_genrate_log(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
+        hidden_states = [outputs["last_hidden_state"][0,-1], hidden_states[0,-1], hidden[0][0], llm_logit[0], logit[0][0]]
+    else:
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token
 
 
@@ -430,7 +433,8 @@ def update_inference_inputs(
         current_length_data,
         model,
         hidden_state_new,
-        sample_p
+        sample_p,
+        is_log = False
 ):
     prev_input_len = input_ids.shape[1]
     # Map the best candidate indices to the original indices in the sequence
@@ -465,14 +469,20 @@ def update_inference_inputs(
         token = torch.argmax(prob)
         token = token[None, None]
     # hidden_state = torch.cat((hidden_state, accept_hidden_state_new), dim=1)
-    draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(accept_hidden_state_new,
-                                              input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
-                                              head=model.base_model.lm_head,logits_processor=logits_processor)
+    if is_log:
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit = model.ea_layer.topK_genrate_log(accept_hidden_state_new,
+                                                input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
+                                                head=model.base_model.lm_head,logits_processor=logits_processor)
+    else:
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(accept_hidden_state_new,
+                                                input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
+                                                head=model.base_model.lm_head,logits_processor=logits_processor)
 
 
     new_token += accept_length + 1
 
-    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, None, token
+    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, \
+            [accept_hidden_state_new, hidden, logit] if is_log else None, token
 
 
 if __name__ == "__main__":

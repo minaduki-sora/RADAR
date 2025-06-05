@@ -48,11 +48,11 @@ def process_jsonl_file(file_path, output_dir):
     plt.grid(axis='y', alpha=0.75)
     
     # 保存直方图
-    output_path = os.path.join(output_dir, 'accept_len_frequency.png')
+    output_path = os.path.join(output_dir, 'accept_len_frequency13.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"\nHistogram saved to: {output_path}")
 
 # 使用示例
-file_path = 'output/mt-bench/llama3.1-log-d7.jsonl'  # 替换为您的文件路径
+file_path = 'output/mt-bench/llama3.1-log-d13-topk10.jsonl'  # 替换为您的文件路径
 output_dir = 'output/mt-bench/'
 process_jsonl_file(file_path, output_dir)
