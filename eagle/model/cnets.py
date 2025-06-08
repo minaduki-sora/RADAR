@@ -820,7 +820,7 @@ class Model(nn.Module):
         return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
     
     @torch.no_grad()
-    def topK_genrate_log(self, hidden_states, input_ids, head, logits_processor):
+    def topK_genrate_log(self, hidden_states, input_ids, head, logits_processor, is_log_hidden=False, is_log_scores=False):
 
         input_ids = input_ids.to(hidden_states.device)
         total_tokens = self.total_tokens
@@ -833,7 +833,8 @@ class Model(nn.Module):
         parents_list = []
         ss_token = []
         hidden_list = []
-        logit_list = []
+        scores_dict = {}
+        idx = 1
 
         input_ids = input_ids[:, 1:]
         input_ids = input_ids.to(hidden_states.device)
@@ -850,16 +851,19 @@ class Model(nn.Module):
             out_hidden, past_key_values = self(hidden_states, input_ids=input_ids, use_cache=True)
         self.stable_kv = past_key_values
         last_hidden = out_hidden[:, -1]
-        hidden_list.append(last_hidden) # log hidden states
+        if is_log_hidden:
+            hidden_list.append(last_hidden) # log hidden states
 
         # last_headout = head(last_hidden)
         last_headout = self.lm_head(self.norm(last_hidden))
 
         last_p = self.logsoftmax(last_headout)
-        logit_list.append(last_headout) # log logits
         top = torch.topk(last_p, top_k, dim=-1)
         topk_index, topk_p = top.indices, top.values
         scores = topk_p[0]
+        if is_log_scores:
+            scores_dict[f"eagle_{idx}_forward"] = scores
+            idx += 1
         scores_list.append(scores[None])
         parents_list.append(torch.zeros(1, dtype=torch.long, device=scores.device))
         if self.config.vocab_size==self.config.draft_vocab_size:
@@ -899,6 +903,9 @@ class Model(nn.Module):
             topk_cs = torch.topk(cu_scores.view(-1), top_k, dim=-1)
             topk_cs_index, topk_cs_p = topk_cs.indices, topk_cs.values
             scores = topk_cs_p
+            if is_log_scores:
+                scores_dict[f"eagle_{idx}_forward"] = scores
+                idx += 1
 
             out_ids = topk_cs_index // top_k
             input_hidden = out_hidden[:, out_ids]
@@ -987,7 +994,13 @@ class Model(nn.Module):
         del mask_index, mask_index_list, noleaf_index, noleaf_num, leaf_num, max_depth, rid
         tree_position_ids = tree_position_ids.to(hidden_states.device)
 
-        return draft_tokens, retrieve_indices, tree_mask, tree_position_ids, hidden_list, logit_list
+        if is_log_hidden:
+            return draft_tokens, retrieve_indices, tree_mask, tree_position_ids, hidden_list, scores_dict, None
+        else: 
+            if is_log_scores:
+                return draft_tokens, retrieve_indices, tree_mask, tree_position_ids, None, None, scores_dict
+            else:
+                return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
 
 
 

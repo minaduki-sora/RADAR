@@ -1,10 +1,10 @@
 {
-  "input_dim": 23,
+  "input_dim": 4,
   "num_classes": 15,
   "train_batch_size": 64,
   "eval_batch_size": 64,
   "epochs": 20,
-  "learning_rate": 0.001,
-  "dataset_path": "../data/mt-bench-llama3-d13-topk10-t0",
+  "learning_rate": 1e-4,
+  "dataset_path": "../data/mt-bench-llama3-d13-topk10-t0-cal/arrow",
   "save_model_path": "../../weights/hawkeye/mt-bench-llama3-d13-topk10-t0.pt"
 }

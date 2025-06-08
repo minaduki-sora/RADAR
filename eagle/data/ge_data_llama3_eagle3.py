@@ -168,13 +168,19 @@ def get_model_answers(
                 # # try:
                 # torch.cuda.synchronize()
                 # start_time = time.time()
+                is_log_hidden_state = False
+                is_log_scores = False
+                if hasattr(args, "save_dataset"):
+                    is_log_hidden_state = True if args.save_hidden == 0 else False
+                    is_log_scores = True if args.save_hidden == 1 else False
 
-                output_ids, new_token, idx, acc_len_list, hidden_list, logit_list = model.eagenerate_log(
+                output_ids, new_token, idx, acc_len_list, hidden_list, logit_list, scores_dict = model.eagenerate_log(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True,
                     is_llama3=True,
-                    is_log_hidden_state=True
+                    is_log_hidden_state=is_log_hidden_state,
+                    is_log_scores=is_log_scores
                 )
                 # torch.cuda.synchronize()
                 # total_time = time.time() - start_time
@@ -182,19 +188,22 @@ def get_model_answers(
 
                 # save data
                 if hasattr(args, "save_dataset"):
-                    for i in range(len(acc_len_list)):
-                        temp = {
-                            "accept_length":acc_len_list[i],
-                            "last_hidden_state":hidden_list[i][0].cpu().numpy(),
-                            "all_hidden_state":hidden_list[i][1].cpu().numpy(),
-                            "egale_1st_forward_hidden":hidden_list[i][2].cpu().numpy(),
-                            "eagle_input":hidden_list[i][3].cpu().numpy(),
-                            "last_logit":logit_list[i][0].cpu().numpy(),
-                            "egale_1st_forward_logit":logit_list[i][1].cpu().numpy()
-                        }
-                        data.append(temp)
+                    if is_log_hidden_state:
+                        for i in range(len(acc_len_list)):
+                            temp = {
+                                "accept_length":acc_len_list[i],
+                                "last_hidden_state":hidden_list[i][0].cpu().numpy(),
+                                "all_hidden_state":hidden_list[i][1].cpu().numpy(),
+                                "egale_1st_forward_hidden":hidden_list[i][2].cpu().numpy(),
+                                "eagle_input":hidden_list[i][3].cpu().numpy(),
+                                "last_logit":logit_list[i][0].cpu().numpy(),
+                                "egale_1st_forward_logit":logit_list[i][1].cpu().numpy()
+                            }
+                            data.append(temp)
                     del hidden_list
                     del logit_list
+                    if is_log_scores:
+                        data.append(scores_dict)
 
                 output_ids = output_ids[0][len(input_ids[0]):]
                 # be consistent with the template's stop_token_ids
@@ -312,6 +321,7 @@ if __name__ == "__main__":
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
     parser.add_argument("--log-file", type=str, help="The output log file.")
     parser.add_argument("--save-dataset", type=str, help="The path to save the dataset.")
+    parser.add_argument("--save-hidden", type=int, default=0, help="0 for saving hidden_states and logits, 1 for saving treenodes")
     parser.add_argument(
         "--max-new-token",
         type=int,

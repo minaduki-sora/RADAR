@@ -229,7 +229,7 @@ def initialize_tree0(input_ids, model, past_key_values, logits_processor):
     #     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden_states, token
     return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, logits, hidden_state, sample_token
 
-def initialize_tree(input_ids, model, past_key_values, logits_processor, is_log = False):
+def initialize_tree(input_ids, model, past_key_values, logits_processor, is_log_hidden = False, is_log_scores = False):
     outputs, orig, hidden_states = model(
         input_ids, past_key_values=past_key_values, output_orig=True
     )
@@ -250,13 +250,16 @@ def initialize_tree(input_ids, model, past_key_values, logits_processor, is_log 
         if outputs["hidden_states"][0].device != ea_device:
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
         hidden_states=torch.cat(outputs["hidden_states"],dim=-1)
-    if is_log:
+    if is_log_hidden:
         llm_logit = orig[:, -1] if logits_processor is None else probabilities
-        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit = model.ea_layer.topK_genrate_log(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit = model.ea_layer.topK_genrate_log(hidden_states, input_ids, model.base_model.lm_head,logits_processor,True,False)
         hidden_states = [outputs["last_hidden_state"][0,-1], hidden_states[0,-1], hidden[0][0], llm_logit[0], logit[0][0]]
     else:
-        draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
-    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token
+        if is_log_scores:
+            draft_tokens, retrieve_indices,tree_mask,tree_position_ids,_,_,scores_dict = model.ea_layer.topK_genrate_log(hidden_states, input_ids, model.base_model.lm_head,logits_processor,False,True)
+        else:
+            draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
+    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token, scores_dict if is_log_scores else None
 
 
 def reset_tree_mode(
@@ -434,7 +437,8 @@ def update_inference_inputs(
         model,
         hidden_state_new,
         sample_p,
-        is_log = False
+        is_log_hidden = False,
+        is_log_scores = False
 ):
     prev_input_len = input_ids.shape[1]
     # Map the best candidate indices to the original indices in the sequence
@@ -469,10 +473,13 @@ def update_inference_inputs(
         token = torch.argmax(prob)
         token = token[None, None]
     # hidden_state = torch.cat((hidden_state, accept_hidden_state_new), dim=1)
+    is_log = is_log_hidden or is_log_scores
+    out = None
     if is_log:
-        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit = model.ea_layer.topK_genrate_log(accept_hidden_state_new,
+        draft_tokens, retrieve_indices,tree_mask,tree_position_ids, hidden, logit, scores_dict = model.ea_layer.topK_genrate_log(accept_hidden_state_new,
                                                 input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
-                                                head=model.base_model.lm_head,logits_processor=logits_processor)
+                                                head=model.base_model.lm_head,logits_processor=logits_processor, is_log_hidden=is_log_hidden,is_log_scores=is_log_scores)
+        out = [accept_hidden_state_new, hidden, logit] if is_log_hidden else scores_dict
     else:
         draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(accept_hidden_state_new,
                                                 input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
@@ -481,8 +488,7 @@ def update_inference_inputs(
 
     new_token += accept_length + 1
 
-    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, \
-            [accept_hidden_state_new, hidden, logit] if is_log else None, token
+    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, out, token
 
 
 if __name__ == "__main__":
