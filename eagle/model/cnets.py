@@ -964,6 +964,8 @@ class Model(nn.Module):
 
         retrieve_indices = torch.zeros(leaf_num, max_depth.item(), dtype=torch.long) - 1
         retrieve_indices = retrieve_indices.tolist()
+        if is_log_scores:
+            scores_dict["max-depth"] = max_depth.item() - 1
 
         rid = 0
         position_ids_list = tree_position_ids.tolist()

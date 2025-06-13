@@ -636,7 +636,9 @@ class EaModel(nn.Module):
                 hidden_state_list.append(hidden_state_logit[:-2] + [eagle_input]) # log hidden states
                 logits_list.append(hidden_state_logit[-2:]) # log logits
             if is_log_scores:
+                scores_dict["accept_length"]=accept_length.item() if type(accept_length) != int else accept_length
                 scores_dict_list.append(scores_dict)
+
             acc_len_list.append(accept_length.item() if type(accept_length) != int else accept_length) # log accept length
             # print(accept_length)
             # with Timer("update_inference_inputs"):
@@ -680,6 +682,6 @@ class EaModel(nn.Module):
                 return input_ids, new_token, idx, acc_len_list, hidden_state_list, logits_list, None
             else:
                 if is_log_scores:
-                    return input_ids, new_token, idx, acc_len_list, None, None, scores_dict
+                    return input_ids, new_token, idx, acc_len_list, None, None, scores_dict_list
                 else:
                     return input_ids, new_token, idx, acc_len_list

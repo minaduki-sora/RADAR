@@ -9,7 +9,7 @@ import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
 from accelerate.utils import set_seed
 set_seed(0)
 from datasets import Dataset, DatasetDict
@@ -137,7 +137,7 @@ def get_model_answers(
     question = questions[0]
 
     data = []
-    # questions=questions[6:]
+    questions=questions[0:2]
     for question in tqdm(questions):
 
         choices = []
@@ -174,7 +174,7 @@ def get_model_answers(
                     is_log_hidden_state = True if args.save_hidden == 0 else False
                     is_log_scores = True if args.save_hidden == 1 else False
 
-                output_ids, new_token, idx, acc_len_list, hidden_list, logit_list, scores_dict = model.eagenerate_log(
+                output_ids, new_token, idx, acc_len_list, hidden_list, logit_list, scores_dict_list = model.eagenerate_log(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True,
@@ -203,7 +203,8 @@ def get_model_answers(
                     del hidden_list
                     del logit_list
                     if is_log_scores:
-                        data.append(scores_dict)
+                        data.extend(scores_dict_list)
+                    del scores_dict_list
 
                 output_ids = output_ids[0][len(input_ids[0]):]
                 # be consistent with the template's stop_token_ids
