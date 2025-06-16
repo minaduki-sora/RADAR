@@ -385,7 +385,33 @@ def tree_decoding(
     return logits, hidden_state, outputs
 
 
+def tree_decoding_rb(
+        model,
+        tree_candidates,
+        past_key_values,
+        tree_position_ids,
+        input_ids,
+        retrieve_indices,
+):
+    position_ids = tree_position_ids + input_ids.shape[1]
 
+    outputs, tree_logits, hidden_state = model(
+        tree_candidates,
+        output_orig=True,
+        past_key_values=past_key_values,
+        position_ids=position_ids,
+    )
+
+    if model.use_eagle3:
+        ea_device = model.ea_layer.lm_head.weight.device
+        if outputs["hidden_states"][0].device != ea_device:
+            outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
+        hidden_state = torch.cat(outputs["hidden_states"], dim=-1) # [-1,:]
+
+    bsz = tree_candidates.shape[0]
+    batch_idx = torch.arange(bsz)[:, None, None]
+    logits = tree_logits[batch_idx, retrieve_indices, :]
+    return logits, hidden_state, outputs
 
 
 def evaluate_posterior(

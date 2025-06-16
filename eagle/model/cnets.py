@@ -1219,10 +1219,10 @@ class Model(nn.Module):
         tree_mask_list.append(tree_mask)
         tree_position_ids_list.append(tree_position_ids[None])
 
-        for index in range(2, depth+1):
-            # 0,1,2,3,...,depth batch_size
+        for index in range(2, depth+2):
+            # batch_size = depth + 1
             draft_tokens, retrieve_indices, tree_mask, tree_position_ids = make_rb(
-                scores_list[:index], ss_token[:index], total_tokens, sample_token, parents_list, top_k, logits_processor
+                scores_list[:index], ss_token[:index], total_tokens, sample_token, parents_list[:index], top_k, logits_processor
             )
             draft_tokens_list.append(draft_tokens)
             retrieve_indices_list.append(retrieve_indices[None])

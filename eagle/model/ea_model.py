@@ -721,6 +721,11 @@ class EaModel(nn.Module):
             current_length_data = self.current_length_data
             # Reset the past key and value states
             current_length_data.zero_()
+
+            past_key_values_rb = self.past_key_values_rb
+            past_key_values_data_rb = self.past_key_values_data_rb
+            current_length_data_rb = self.current_length_data_rb
+            current_length_data_rb.zero_()
         else:
             (
                 past_key_values,
@@ -730,6 +735,15 @@ class EaModel(nn.Module):
             self.past_key_values = past_key_values
             self.past_key_values_data = past_key_values_data
             self.current_length_data = current_length_data
+
+            (
+                past_key_values_rb,
+                past_key_values_data_rb,
+                current_length_data_rb,
+            ) = initialize_past_key_values(self.base_model,max_length=max_length,batch_size=self.ea_layer.depth+1)
+            self.past_key_values_rb = past_key_values_rb
+            self.past_key_values_data_rb = past_key_values_data_rb
+            self.current_length_data_rb = current_length_data_rb
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
@@ -744,7 +758,7 @@ class EaModel(nn.Module):
 
             draft_tokens = draft_tokens.to(input_ids.device)
             # with Timer("tree_decoding"):
-            logits, hidden_state_new, outputs = tree_decoding(
+            logits, hidden_state_new, outputs = tree_decoding_rb(
                 self,
                 draft_tokens,
                 past_key_values,
@@ -752,8 +766,7 @@ class EaModel(nn.Module):
                 input_ids,
                 retrieve_indices,
             )
-            # retrieve_indices=tree_buffers["retrieve_indices"]
-            # logits = logits[0, retrieve_indices]
+
             draft_tokens = torch.cat((draft_tokens, padding), dim=1)
             candidates = draft_tokens[0, retrieve_indices]
             best_candidate, accept_length, sample_p = evaluate_posterior(
