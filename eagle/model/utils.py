@@ -406,12 +406,11 @@ def tree_decoding_rb(
         ea_device = model.ea_layer.lm_head.weight.device
         if outputs["hidden_states"][0].device != ea_device:
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
-        hidden_state = torch.cat(outputs["hidden_states"], dim=-1) # [-1,:]
+        hidden_state = torch.cat(outputs["hidden_states"], dim=-1)[-1:,...] #select the last batch
 
     bsz = tree_candidates.shape[0]
-    batch_idx = torch.arange(bsz)[:, None, None]
-    logits = tree_logits[batch_idx, retrieve_indices, :]
-    return logits, hidden_state, outputs
+    logits_list = [tree_logits[i, retrieve_indices[i]] for i in range(bsz)]
+    return logits_list, hidden_state, outputs
 
 
 def evaluate_posterior(

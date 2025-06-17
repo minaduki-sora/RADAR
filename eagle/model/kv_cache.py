@@ -158,17 +158,37 @@ def initialize_past_key_values(model,max_length=2200,batch_size=1):
     return past_key_values, past_key_values_data_list, current_length_data
 
 def interleave_kv(input, output, incld, outcld):
+    """
+    copy kvcache to decoding in parallel
+    Args:
+        input: past_key_values_data whose batch_size is 1
+        output: past_key_values_data whose batch_size is not 1
+        incld: input's current_length_data
+        outcld: output's current_length_data
+    """
     # past_key_values_data[i].shape=[num*2, bsz, num_key_value_heads, max_length, hidden_size // num_attention_heads], nums represent the num of layers stored in the same device
-    # for past_key_values_data in past_key_values_data_list:
-    #     tgt = past_key_values_data[..., select_indices.to(past_key_values_data.device), :]
-    #     # Destination tensor where the relevant past information will be stored
-    #     dst = past_key_values_data[..., prev_input_len: prev_input_len + tgt.shape[-2], :]
-    #     # Copy relevant past information from the source to the destination
-    #     dst.copy_(tgt, non_blocking=True)
     bsz = output[0].shape[1]
+    assert len(input) == len(output)
     for i in range(len(input)):
-        tgt = input[i].repeat_interleave(bsz, dim=1)
-        dst = output[i][...]
+        assert input[i].shape[0] == output[i].shape[0]
+        tgt = input[i][..., :incld, :].repeat_interleave(bsz, dim=1)
+        dst = torch.narrow(output[i], -2, 0, incld) #output[i][..., :incld, :]
         dst.copy_(tgt, non_blocking=True)
     outcld.copy_(incld, non_blocking=True)
 
+def squeeze_kv(input, output, incld, outcld):
+    """
+    restore kvcache to update
+    Args:
+        input: past_key_values_data whose batch_size is not 1
+        output: past_key_values_data whose batch_size is 1
+        incld: input's current_length_data
+        outcld: output's current_length_data
+    """
+    assert len(input) == len(output)
+    for i in range(len(input)):
+        assert input[i].shape[0] == output[i].shape[0]
+        tgt = input[i][:, -1:, :, :incld, :] # select the last batch
+        dst = torch.narrow(output[i], -2, 0, incld) #output[i][..., :incld, :]
+        dst.copy_(tgt, non_blocking=True)
+    outcld.copy_(incld, non_blocking=True)

@@ -1230,14 +1230,14 @@ class Model(nn.Module):
             tree_position_ids_list.append(tree_position_ids[None])
         
         draft_tokens = torch.cat(draft_tokens_list, dim=0) # shape = [batch_size, total_tokens + 1]
-        retrieve_indices = torch.cat(retrieve_indices_list, dim=0) # shape = [batch_size, leaf_num, max_depth]
+        # retrieve_indices_list list[tensor] 'shape' = [batch_size, leaf_num, max_depth]
         tree_mask = torch.cat(tree_mask_list, dim=0) # shape = [batch_size, 1, total_tokens + 1, total_tokens + 1]
         tree_position_ids = torch.cat(tree_position_ids_list, dim=0) # shape = [batch_size, total_tokens + 1]
 
-        del draft_tokens_list, retrieve_indices_list, tree_mask_list, tree_position_ids_list
+        del draft_tokens_list, tree_mask_list, tree_position_ids_list
         del parents_list, scores_list, ss_token
 
-        return draft_tokens, retrieve_indices, tree_mask, tree_position_ids, scores_dict
+        return draft_tokens, retrieve_indices_list, tree_mask, tree_position_ids, scores_dict
 
 
 import torch

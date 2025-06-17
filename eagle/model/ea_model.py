@@ -13,7 +13,7 @@ from .modeling_llama_kv import LlamaForCausalLM as KVLlamaForCausalLM
 from .modeling_mixtral_kv import MixtralForCausalLM as KVMixtralForCausalLM
 from .modeling_qwen2_kv import LlamaForCausalLM as KVQwen2ForCausalLM
 from .utils import *
-from .kv_cache import initialize_past_key_values
+from .kv_cache import initialize_past_key_values, interleave_kv, squeeze_kv
 
 from .cnets import Model
 from .cnets1 import Model as Model1
@@ -757,6 +757,8 @@ class EaModel(nn.Module):
             self.base_model.model.tree_mask = tree_mask
 
             draft_tokens = draft_tokens.to(input_ids.device)
+
+            interleave_kv(past_key_values_data, past_key_values_data_rb, current_length_data, current_length_data_rb)
             # with Timer("tree_decoding"):
             logits, hidden_state_new, outputs = tree_decoding_rb(
                 self,
@@ -766,6 +768,7 @@ class EaModel(nn.Module):
                 input_ids,
                 retrieve_indices,
             )
+            squeeze_kv(past_key_values_data_rb, past_key_values_data, current_length_data_rb, current_length_data)
 
             draft_tokens = torch.cat((draft_tokens, padding), dim=1)
             candidates = draft_tokens[0, retrieve_indices]
