@@ -697,7 +697,7 @@ class EaModel(nn.Module):
             max_length=2048,
             log=False,
             is_llama3=False,
-
+            repeat_num=1,
     ):
         if is_llama3:
             stop_token_id = self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -747,7 +747,7 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
-        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state, sample_token = initialize_tree_rb(
+        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, scores_dict = initialize_tree_rb(
             input_ids, self, past_key_values, logits_processor
         )
         new_token = 0
@@ -770,10 +770,11 @@ class EaModel(nn.Module):
             )
             squeeze_kv(past_key_values_data_rb, past_key_values_data, current_length_data_rb, current_length_data)
 
-            draft_tokens = torch.cat((draft_tokens, padding), dim=1)
-            candidates = draft_tokens[0, retrieve_indices]
-            best_candidate, accept_length, sample_p = evaluate_posterior(
-                logits, candidates, logits_processor
+            draft_tokens = torch.cat((draft_tokens, padding.repeat_interleave(draft_tokens.shape[0], dim=0)), dim=1) # draft_tokens = torch.cat((draft_tokens, padding), dim=1)
+            candidates = [draft_tokens[i, retrieve_indices[i]] for i in range(draft_tokens.shape[0])] # candidates = draft_tokens[0, retrieve_indices]
+
+            best_candidate, accept_length, sample_p = evaluate_posterior_rb(
+                logits, candidates, logits_processor, repeat_num, scores_dict
             )
             # print(accept_length)
             # with Timer("update_inference_inputs"):

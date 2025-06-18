@@ -306,8 +306,8 @@ def initialize_tree_rb(input_ids, model, past_key_values, logits_processor):
         if outputs["hidden_states"][0].device != ea_device:
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
         hidden_states=torch.cat(outputs["hidden_states"],dim=-1)
-    draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate_rb(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
-    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token
+    draft_tokens, retrieve_indices,tree_mask,tree_position_ids,scores_dict = model.ea_layer.topK_genrate_rb(hidden_states, input_ids, model.base_model.lm_head,logits_processor)
+    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, scores_dict#hidden_states, token
 
 def reset_tree_mode(
         model,
@@ -494,6 +494,14 @@ def evaluate_posterior(
             sample_p = torch.softmax(gt_logits, dim=0)
         return torch.tensor(best_candidate), accept_length - 1, sample_p
 
+def evaluate_posterior_rb(
+        logits: torch.Tensor,
+        candidates: torch.Tensor,
+        logits_processor,
+        repeat_num: int = 1,
+        scores_dict: dict = None
+):
+    pass
 
 @torch.no_grad()
 def update_inference_inputs(

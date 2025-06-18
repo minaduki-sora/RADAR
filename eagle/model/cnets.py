@@ -1051,8 +1051,6 @@ class Model(nn.Module):
             retrieve_indices = torch.zeros(leaf_num, max_depth.item(), dtype=torch.long) - 1
             retrieve_indices = retrieve_indices.tolist()
 
-            scores_dict["max-depth"] = max_depth.item() - 1
-
             rid = 0
             position_ids_list = tree_position_ids.tolist()
 
@@ -1215,7 +1213,7 @@ class Model(nn.Module):
 
         draft_tokens, retrieve_indices, tree_mask, tree_position_ids = make_rb0(ss_token0, total_tokens, sample_token)
         draft_tokens_list.append(draft_tokens)
-        retrieve_indices_list.append(retrieve_indices[None])
+        retrieve_indices_list.append(retrieve_indices)
         tree_mask_list.append(tree_mask)
         tree_position_ids_list.append(tree_position_ids[None])
 
@@ -1225,7 +1223,7 @@ class Model(nn.Module):
                 scores_list[:index], ss_token[:index], total_tokens, sample_token, parents_list[:index], top_k, logits_processor
             )
             draft_tokens_list.append(draft_tokens)
-            retrieve_indices_list.append(retrieve_indices[None])
+            retrieve_indices_list.append(retrieve_indices)
             tree_mask_list.append(tree_mask)
             tree_position_ids_list.append(tree_position_ids[None])
         
