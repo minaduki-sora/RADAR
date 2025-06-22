@@ -697,7 +697,6 @@ class EaModel(nn.Module):
             max_length=2048,
             log=False,
             is_llama3=False,
-            repeat_num=1,
     ):
         if is_llama3:
             stop_token_id = self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -751,6 +750,7 @@ class EaModel(nn.Module):
             input_ids, self, past_key_values, logits_processor
         )
         new_token = 0
+        scores_dict_list = []
         max_length = max_length - self.ea_layer.total_tokens - 10
         for idx in range(max_length):
             # with Timer("all"):
@@ -774,11 +774,14 @@ class EaModel(nn.Module):
             candidates = [draft_tokens[i, retrieve_indices[i]] for i in range(draft_tokens.shape[0])] # candidates = draft_tokens[0, retrieve_indices]
 
             best_candidate, accept_length, sample_p = evaluate_posterior_rb(
-                logits, candidates, logits_processor, repeat_num, scores_dict
+                logits, candidates, logits_processor, scores_dict
             )
-            # print(accept_length)
+            retrieve_indices = retrieve_indices[-1] #select the last batch
+            candidates = draft_tokens[-1, retrieve_indices] #select the last batch
+            scores_dict_list.append(scores_dict)
+
             # with Timer("update_inference_inputs"):
-            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, hidden_state, sample_token = update_inference_inputs_rb(
+            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, scores_dict = update_inference_inputs_rb(
                 input_ids,
                 candidates,
                 best_candidate,
@@ -804,6 +807,6 @@ class EaModel(nn.Module):
             if input_ids.shape[1] > max_length:
                 break
         if not log:
-            return input_ids
+            return input_ids, scores_dict_list
         else:
-            return input_ids, new_token, idx
+            return input_ids, new_token, idx, scores_dict_list

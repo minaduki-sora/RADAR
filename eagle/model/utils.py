@@ -494,18 +494,19 @@ def evaluate_posterior(
             sample_p = torch.softmax(gt_logits, dim=0)
         return torch.tensor(best_candidate), accept_length - 1, sample_p
 
-from collections import defaultdict
+
 
 def evaluate_posterior_rb_op(
         logits: torch.Tensor,
         candidates: torch.Tensor,
         logits_processor,
 ):
-    stop_dict = defaultdict(float)
+    
     prefix_set = set()
-    acc = torch.zeros_like(candidates, dtype=torch.float32, device=candidates.device)
+    acc = torch.zeros_like(candidates, dtype=torch.float16, device=candidates.device)
     acc[:, 0] = 1.0
     num_k, num_i = candidates.shape
+    stop = [0.0] * num_i
 
     for k in range(num_k):
         for i in range(1, num_i + 1):
@@ -520,10 +521,10 @@ def evaluate_posterior_rb_op(
 
             P_accept = torch.prod(acc[k, :i])
             if i == num_i:
-                stop_dict[i - 1] += P_accept.item()
+                stop[i - 1] += P_accept.item()
                 continue
 
-            # 用torch批量判断前缀是否一致
+            # 批量判断前缀是否一致
             is_eq = (candidates[:, :i] == candidates[k, :i]).all(dim=1)
             eq_indices = torch.where(is_eq)[0]
             fi = eq_indices[0]
@@ -549,18 +550,36 @@ def evaluate_posterior_rb_op(
                 acc[eq_indices[idx], i] = px
                 P_reject -= px
             P_stop = P_accept * P_reject
-            stop_dict[i - 1] += P_stop.item()
+            stop[i - 1] += P_stop.item()
 
-    return stop_dict, acc
+    return stop, acc
 
 def evaluate_posterior_rb(
-        logits: torch.Tensor,
-        candidates: torch.Tensor,
+        logits_list: torch.Tensor,
+        candidates_list: torch.Tensor,
         logits_processor,
-        repeat_num: int = 1,
         scores_dict: dict = None
 ):
-    pass
+    for idx, (logits, candidates) in enumerate(zip(logits_list, candidates_list)):
+        stop, acc = evaluate_posterior_rb_op(
+            logits=logits,
+            candidates=candidates,
+            logits_processor=logits_processor
+        )
+        scores_dict[f"action_{idx}"] = {
+            "stop": stop,
+            "acc": acc
+        }
+        # scores_dict[f"action_{idx}"] = stop
+    
+    #select the last batch
+    best_candidate, accept_length, sample_p = evaluate_posterior(
+        logits_list[-1],
+        candidates_list[-1],
+        logits_processor
+    )
+    return best_candidate, accept_length, sample_p, scores_dict
+
 
 @torch.no_grad()
 def update_inference_inputs(
@@ -736,14 +755,14 @@ def update_inference_inputs_rb(
         token = token[None, None]
     # hidden_state = torch.cat((hidden_state, accept_hidden_state_new), dim=1)
 
-    draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate(accept_hidden_state_new,
+    draft_tokens, retrieve_indices,tree_mask,tree_position_ids,scores_dict = model.ea_layer.topK_genrate_rb(accept_hidden_state_new,
                                             input_ids=torch.cat((input_ids, token.to(input_ids.device)), dim=1),
                                             head=model.base_model.lm_head,logits_processor=logits_processor)
 
 
     new_token += accept_length + 1
 
-    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, None, token
+    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, scores_dict
 
 if __name__ == "__main__":
     logits = torch.randn(1, 5)
