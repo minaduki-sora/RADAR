@@ -494,6 +494,65 @@ def evaluate_posterior(
             sample_p = torch.softmax(gt_logits, dim=0)
         return torch.tensor(best_candidate), accept_length - 1, sample_p
 
+from collections import defaultdict
+
+def evaluate_posterior_rb_op(
+        logits: torch.Tensor,
+        candidates: torch.Tensor,
+        logits_processor,
+):
+    stop_dict = defaultdict(float)
+    prefix_set = set()
+    acc = torch.zeros_like(candidates, dtype=torch.float32, device=candidates.device)
+    acc[:, 0] = 1.0
+    num_k, num_i = candidates.shape
+
+    for k in range(num_k):
+        for i in range(1, num_i + 1):
+            val = candidates[k, i - 1].item()
+            if val == -1:
+                continue
+            # 用str避免tuple的hash慢
+            prefix = str(candidates[k, :i].tolist())
+            if prefix in prefix_set:
+                continue
+            prefix_set.add(prefix)
+
+            P_accept = torch.prod(acc[k, :i])
+            if i == num_i:
+                stop_dict[i - 1] += P_accept.item()
+                continue
+
+            # 用torch批量判断前缀是否一致
+            is_eq = (candidates[:, :i] == candidates[k, :i]).all(dim=1)
+            eq_indices = torch.where(is_eq)[0]
+            fi = eq_indices[0]
+
+            gt_logits = logits[fi, i - 1][None]
+            gt_logits = logits_processor(None, gt_logits)[0]
+            gtp = torch.softmax(gt_logits, dim=0)
+            P_reject = 1.0
+            candidates_set = set()
+            px = 0.0
+
+            # 向量化子节点处理
+            sub_cands = candidates[eq_indices, i]
+            for idx, x in enumerate(sub_cands):
+                xi = x.item()
+                if xi in candidates_set:
+                    acc[eq_indices[idx], i] = px
+                    continue
+                if xi == -1:
+                    continue
+                candidates_set.add(xi)
+                px = gtp[xi]
+                acc[eq_indices[idx], i] = px
+                P_reject -= px
+            P_stop = P_accept * P_reject
+            stop_dict[i - 1] += P_stop.item()
+
+    return stop_dict, acc
+
 def evaluate_posterior_rb(
         logits: torch.Tensor,
         candidates: torch.Tensor,
