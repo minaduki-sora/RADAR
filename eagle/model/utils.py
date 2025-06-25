@@ -549,10 +549,11 @@ def evaluate_posterior_rb_op(
                 px = gtp[xi]
                 acc[eq_indices[idx], i] = px
                 P_reject -= px
-            P_stop = P_accept * P_reject
-            stop[i - 1] += P_stop.item()
+            P_stop = P_accept.item() * P_reject
+            stop[i - 1] += P_stop
+    del prefix_set, acc
 
-    return stop, acc
+    return stop#, acc
 
 def evaluate_posterior_rb(
         logits_list: torch.Tensor,
@@ -561,14 +562,14 @@ def evaluate_posterior_rb(
         scores_dict: dict = None
 ):
     for idx, (logits, candidates) in enumerate(zip(logits_list, candidates_list)):
-        stop, acc = evaluate_posterior_rb_op(
+        stop = evaluate_posterior_rb_op(
             logits=logits,
             candidates=candidates,
             logits_processor=logits_processor
         )
         scores_dict[f"action_{idx}"] = {
             "stop": stop,
-            "acc": acc
+            # "acc": acc
         }
         # scores_dict[f"action_{idx}"] = stop
     
@@ -578,7 +579,7 @@ def evaluate_posterior_rb(
         candidates_list[-1],
         logits_processor
     )
-    return best_candidate, accept_length, sample_p, scores_dict
+    return best_candidate, accept_length, sample_p
 
 
 @torch.no_grad()

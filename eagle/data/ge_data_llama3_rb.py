@@ -1,7 +1,7 @@
 """Generate answers with local models.
 
 Usage:
-python3 gen_model_answer.py --model-path lmsys/fastchat-t5-3b-v1.0 --model-id fastchat-t5-3b-v1.0
+python -m eagle.data.ge_data_llama3_rb --ea-model-path ../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name shareGPT --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --answer-file output/shareGPT/llama3.1-d7-rb.jsonl --save-dataset data/scores_rb/shareGPT-llama3-d7-topk10-t1/ --question-begin 0 --question-end 1000
 """
 import argparse
 import json
@@ -9,7 +9,7 @@ import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
 from datasets import Dataset, DatasetDict
@@ -41,7 +41,6 @@ def run_eval(
         question_begin,
         question_end,
         answer_file,
-        log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -78,7 +77,6 @@ def run_eval(
                 model_id,
                 questions[i: i + chunk_size],
                 answer_file,
-                log_file,
                 max_new_token,
                 num_choices,
                 num_gpus_per_model,
@@ -99,7 +97,6 @@ def get_model_answers(
         model_id,
         questions,
         answer_file,
-        log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -163,12 +160,6 @@ def get_model_answers(
                 # # try:
                 # torch.cuda.synchronize()
                 # start_time = time.time()
-                is_log_hidden_state = False
-                is_log_scores = False
-                if hasattr(args, "save_dataset"):
-                    is_log_hidden_state = True if args.save_hidden == 0 else False
-                    is_log_scores = True if args.save_hidden == 1 else False
-
                 output_ids, new_token, idx, scores_dict_list = model.eagenerate_rb(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
@@ -177,27 +168,11 @@ def get_model_answers(
                 )
                 # torch.cuda.synchronize()
                 # total_time = time.time() - start_time
-                acc_len_list_list.append(acc_len_list)
+                # acc_len_list_list.append(acc_len_list)
 
                 # save data
                 if hasattr(args, "save_dataset"):
-                    if is_log_hidden_state:
-                        for i in range(len(acc_len_list)):
-                            temp = {
-                                "accept_length":acc_len_list[i],
-                                "last_hidden_state":hidden_list[i][0].cpu().numpy(),
-                                "all_hidden_state":hidden_list[i][1].cpu().numpy(),
-                                "egale_1st_forward_hidden":hidden_list[i][2].cpu().numpy(),
-                                "eagle_input":hidden_list[i][3].cpu().numpy(),
-                                "last_logit":logit_list[i][0].cpu().numpy(),
-                                "egale_1st_forward_logit":logit_list[i][1].cpu().numpy()
-                            }
-                            data.append(temp)
-                    del hidden_list
-                    del logit_list
-                    if is_log_scores:
-                        data.extend(scores_dict_list)
-                    del scores_dict_list
+                    data.extend(scores_dict_list)
 
                 output_ids = output_ids[0][len(input_ids[0]):]
                 # be consistent with the template's stop_token_ids
@@ -252,15 +227,6 @@ def get_model_answers(
                 "tstamp": time.time(),
             }
             fout.write(json.dumps(ans_json) + "\n")
-        # Dump logs
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        with open(os.path.expanduser(log_file), "a") as fout:
-            ans_json = {
-                "question_id": question["question_id"],
-                "model_id": model_id,
-                "accept_len_list": acc_len_list_list,
-            }
-            fout.write(json.dumps(ans_json) + "\n")
 
     # save dataset
     if hasattr(args, "save_dataset"):
@@ -313,9 +279,9 @@ if __name__ == "__main__":
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
-    parser.add_argument("--log-file", type=str, help="The output log file.")
+    # parser.add_argument("--log-file", type=str, help="The output log file.")
     parser.add_argument("--save-dataset", type=str, help="The path to save the dataset.")
-    parser.add_argument("--save-hidden", type=int, default=0, help="0 for saving hidden_states and logits, 1 for saving treenodes")
+    # parser.add_argument("--save-hidden", type=int, default=0, help="0 for saving hidden_states and logits, 1 for saving treenodes")
     parser.add_argument(
         "--max-new-token",
         type=int,
@@ -366,6 +332,7 @@ if __name__ == "__main__":
         "--temperature",
         type=float,
         default=0.0,
+        help="The temperature for sampling. 0.0 means greedy decoding.",
     )
 
     parser.add_argument(
@@ -390,12 +357,12 @@ if __name__ == "__main__":
 
     print(f"Output to {answer_file}")
 
-    if args.log_file:
-        log_file = args.log_file
-    else:
-        log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
+    # if args.log_file:
+    #     log_file = args.log_file
+    # else:
+    #     log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
 
-    print(f"Log output to {log_file}")
+    # print(f"Log output to {log_file}")
 
     run_eval(
         args.base_model_path,
@@ -405,7 +372,6 @@ if __name__ == "__main__":
         args.question_begin,
         args.question_end,
         answer_file,
-        log_file,
         args.max_new_token,
         args.num_choices,
         args.num_gpus_per_model,
@@ -416,4 +382,4 @@ if __name__ == "__main__":
     )
 
     reorg_answer_file(answer_file)
-    reorg_answer_file(log_file)
+    # reorg_answer_file(log_file)

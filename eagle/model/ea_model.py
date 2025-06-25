@@ -763,7 +763,7 @@ class EaModel(nn.Module):
             logits, hidden_state_new, outputs = tree_decoding_rb(
                 self,
                 draft_tokens,
-                past_key_values,
+                past_key_values_rb,
                 tree_position_ids,
                 input_ids,
                 retrieve_indices,

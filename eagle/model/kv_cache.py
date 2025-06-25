@@ -171,8 +171,8 @@ def interleave_kv(input, output, incld, outcld):
     assert len(input) == len(output)
     for i in range(len(input)):
         assert input[i].shape[0] == output[i].shape[0]
-        tgt = input[i][..., :incld, :].repeat_interleave(bsz, dim=1)
-        dst = torch.narrow(output[i], -2, 0, incld) #output[i][..., :incld, :]
+        tgt = input[i][..., :incld[0], :].repeat_interleave(bsz, dim=1)
+        dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
         dst.copy_(tgt, non_blocking=True)
     outcld.copy_(incld, non_blocking=True)
 
@@ -188,7 +188,7 @@ def squeeze_kv(input, output, incld, outcld):
     assert len(input) == len(output)
     for i in range(len(input)):
         assert input[i].shape[0] == output[i].shape[0]
-        tgt = input[i][:, -1:, :, :incld, :] # select the last batch
-        dst = torch.narrow(output[i], -2, 0, incld) #output[i][..., :incld, :]
+        tgt = input[i][:, -1:, :, :incld[0], :] # select the last batch
+        dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
         dst.copy_(tgt, non_blocking=True)
     outcld.copy_(incld, non_blocking=True)

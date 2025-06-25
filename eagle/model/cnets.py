@@ -1083,7 +1083,7 @@ class Model(nn.Module):
             return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
 
         def make_rb0(ss_token, total_tokens, sample_token):
-            draft_tokens = ss_token[0]
+            draft_tokens = ss_token[0].view(-1)
             draft_tokens = torch.cat((sample_token, draft_tokens), dim=0)
             draft_tokens = draft_tokens[None]
 
@@ -1096,9 +1096,9 @@ class Model(nn.Module):
 
             tree_mask = torch.eye(total_tokens + 1).bool()
             tree_mask[:, 0] = True
-            tree_mask = tree_mask.float()[None, None]
-
+            
             tree_position_ids = torch.sum(tree_mask, dim=1) - 1 #减一代表根结点深度为0定义下的深度
+            tree_mask = tree_mask.float()[None, None]
             tree_position_ids = tree_position_ids.to(hidden_states.device)
 
             return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
