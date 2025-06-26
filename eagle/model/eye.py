@@ -48,12 +48,13 @@ class LSTMPolicyNet(nn.Module):
             actions = dist.sample()
         return actions, probs, hidden
 
-# 用法示例
-if __name__ == "__main__":
-    B, T, state_dim = 2, 7, 10
-    model = LSTMPolicyNet(state_dim=state_dim)
-    dummy_states = torch.randn(B, T, state_dim)
-    logits, _ = model(dummy_states)
-    print("logits shape:", logits.shape)      # [B, T, 2]
-    actions, probs, _ = model.act(dummy_states)
-    print("actions shape:", actions.shape)    # [B, T]
+    def reset_hidden(self, batch_size):
+        """
+        重置LSTM的隐藏状态
+        batch_size: int
+        Returns:
+            hidden: (h0, c0) tuple for LSTM initial state
+        """
+        h0 = torch.zeros(self.num_layers, batch_size, self.lstm_hidden).to(next(self.parameters()).device)
+        c0 = torch.zeros(self.num_layers, batch_size, self.lstm_hidden).to(next(self.parameters()).device)
+        return (h0, c0)
