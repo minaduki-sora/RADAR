@@ -18,6 +18,7 @@ from .kv_cache import initialize_past_key_values, interleave_kv, squeeze_kv
 from .cnets import Model
 from .cnets1 import Model as Model1
 from .configs import EConfig
+from .eye import Hawkeye
 
 
 class EaModel(nn.Module):
@@ -53,6 +54,7 @@ class EaModel(nn.Module):
         if use_eagle3:
             self.ea_layer = Model(config, bias=bias, total_tokens=total_token, depth=depth, top_k=top_k,
                                   threshold=threshold, path=base_model_name_or_path,load_emb=True)
+            self.eye = Hawkeye()
         else:
             self.ea_layer = Model1(config, bias=bias, total_tokens=total_token, depth=depth, top_k=top_k,
                                   threshold=threshold, path=base_model_name_or_path,load_emb=True)

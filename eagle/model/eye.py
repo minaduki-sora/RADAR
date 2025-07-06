@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class LSTMPolicyNet(nn.Module):
+class Hawkeye(nn.Module):
     def __init__(self, state_dim=10, lstm_hidden=128, mlp_hidden=64, num_layers=1, dropout=0.1):
         super().__init__()
         self.state_dim = state_dim
