@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class Hawkeye(nn.Module):
-    def __init__(self, state_dim=10, lstm_hidden=128, mlp_hidden=64, num_layers=1, dropout=0.1):
+    def __init__(self, state_dim=10, lstm_hidden=128, mlp_hidden=128, num_layers=1, dropout=0.1):
         super().__init__()
         self.state_dim = state_dim
         self.lstm_hidden = lstm_hidden
@@ -16,8 +16,9 @@ class Hawkeye(nn.Module):
             dropout=dropout if num_layers > 1 else 0
         )
         self.mlp = nn.Sequential(
-            nn.Linear(lstm_hidden, mlp_hidden),
+            nn.Linear(lstm_hidden + state_dim, mlp_hidden),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(mlp_hidden, 2)  # 输出2个动作的logits
         )
 
@@ -29,7 +30,7 @@ class Hawkeye(nn.Module):
             action_logits: [B, T, 2]  # 每个时刻的动作分数
         """
         lstm_out, hidden = self.lstm(state_seq, hidden)  # lstm_out: [B, T, lstm_hidden]
-        logits = self.mlp(lstm_out)                      # logits: [B, T, 2]
+        logits = self.mlp(torch.cat((lstm_out, state_seq), dim=-1))  # [B, T, lstm_hidden + state_dim] -> [B, T, 2]
         return logits, hidden
 
     def act(self, state_seq, hidden=None, deterministic=False):
