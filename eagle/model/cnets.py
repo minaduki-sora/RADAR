@@ -1346,6 +1346,7 @@ class Model(nn.Module):
         scores_list = []
         parents_list = []
         ss_token = []
+        ss_token0 = [] #handle the first token
 
         input_ids = input_ids[:, 1:]
         input_ids = input_ids.to(hidden_states.device)
@@ -1370,13 +1371,19 @@ class Model(nn.Module):
         top = torch.topk(last_p, top_k, dim=-1)
         topk_index, topk_p = top.indices, top.values
         scores = topk_p[0]
+
+        top0 = torch.topk(last_p, total_tokens, dim=-1)
+        topk_index0, topk_p0 = top0.indices, top0.values
+
         scores_list.append(scores[None])
         parents_list.append(torch.zeros(1, dtype=torch.long, device=scores.device))
         if self.config.vocab_size==self.config.draft_vocab_size:
             ss_token.append(topk_index)
+            ss_token0.append(topk_index0)
             input_ids = topk_index
         else:
             ss_token.append(topk_index+self.d2t[topk_index])
+            ss_token0.append(topk_index0+self.d2t[topk_index0])
             input_ids = topk_index+self.d2t[topk_index]
         input_hidden = last_hidden[None].repeat(1, top_k, 1)
         tree_mask = self.tree_mask_init
@@ -1429,7 +1436,7 @@ class Model(nn.Module):
 
 
         if i == 0:
-            draft_tokens, retrieve_indices, tree_mask, tree_position_ids = make_rb0(ss_token, total_tokens, sample_token)
+            draft_tokens, retrieve_indices, tree_mask, tree_position_ids = make_rb0(ss_token0, total_tokens, sample_token)
         else:
             draft_tokens, retrieve_indices, tree_mask, tree_position_ids = make_rb(
                 scores_list, ss_token, total_tokens, sample_token, parents_list, top_k, logits_processor
