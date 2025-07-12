@@ -213,7 +213,7 @@ def get_model_answers(
             })
     print('Warmup done')
 
-    questions=questions[879:]
+    questions=questions[:100]
     for question in tqdm(questions):
 
         choices = []

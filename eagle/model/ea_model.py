@@ -77,7 +77,7 @@ class EaModel(nn.Module):
         load_=self.ea_layer.load_state_dict(ea_layer_state_dict, strict=False)
         self.ea_layer.to(self.base_model.dtype).to(device)
         self.ea_layer.init_tree()
-        if use_eagle3:
+        if hawkeye_state_dict:
             load_eye = self.eye.load_state_dict(hawkeye_state_dict, strict=False)
             self.eye.to(self.base_model.dtype).to(device)
 
@@ -134,7 +134,7 @@ class EaModel(nn.Module):
             if not os.path.exists(load_model_path):
                 load_model_path = hf_hub_download(ea_model_path, "model.safetensors")
             ea_layer_state_dict = load_file(load_model_path)
-        
+
         hawkeye_state_dict = torch.load(eye_model_path, map_location=base_model.device) if eye_model_path is not None else None
 
         model = cls(
