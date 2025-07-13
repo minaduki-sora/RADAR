@@ -1395,7 +1395,8 @@ class Model(nn.Module):
         for i in range(depth):
             eye_logits, hidden = eye(scores[None], hidden)
             eye_probs = torch.softmax(eye_logits, dim=-1)
-            if random.random() > eye_probs[0,0]:
+            r = random.random()
+            if r > eye_probs[0,0]:
                 break
             
             self.tree_mask = tree_mask
