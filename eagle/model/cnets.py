@@ -26,6 +26,7 @@ from typing import List, Optional, Tuple, Union
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch import nn
+import random
 
 from transformers.activations import ACT2FN
 
@@ -1392,9 +1393,11 @@ class Model(nn.Module):
         hidden = None
         # 4
         for i in range(depth):
-            action, _, hidden = eye.act(scores[None], hidden)
-            if action[0] == 0:
+            eye_logits, hidden = eye(scores[None], hidden)
+            eye_probs = torch.softmax(eye_logits, dim=-1)
+            if random.random() > eye_probs[0,0]:
                 break
+            
             self.tree_mask = tree_mask
             position_ids = len_posi + self.position_ids
             # with Timer("draft one"):
