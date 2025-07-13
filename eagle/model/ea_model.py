@@ -573,8 +573,6 @@ class EaModel(nn.Module):
             max_length=2048,
             log=False,
             is_llama3=False,
-            is_log_hidden_state=False,
-            is_log_scores=False
     ):
         if is_llama3:
             stop_token_id = self.tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -610,13 +608,11 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
-        hidden_state_list = [] # log hidden states
-        logits_list = [] # log logits
-        scores_dict_list = []
-        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state_logit, sample_token, scores_dict = initialize_tree_log(
-            input_ids, self, past_key_values, logits_processor, is_log_hidden_state, is_log_scores
+        time_lists = []
+        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, time_list = initialize_tree_log(
+            input_ids, self, past_key_values, logits_processor
         )
-        acc_len_list = [] # log accept length
+        time_lists.append(time_list)
         new_token = 0
         max_length = max_length - self.ea_layer.total_tokens - 10
         for idx in range(max_length):
@@ -640,20 +636,9 @@ class EaModel(nn.Module):
             best_candidate, accept_length, sample_p = evaluate_posterior(
                 logits, candidates, logits_processor
             )
-            if is_log_hidden_state:
-                retrieve_indices_old = retrieve_indices
-                with torch.no_grad():
-                    eagle_input = self.ea_layer.fc(hidden_state_logit[1])
-                hidden_state_list.append(hidden_state_logit[:-2] + [eagle_input]) # log hidden states
-                logits_list.append(hidden_state_logit[-2:]) # log logits
-            if is_log_scores:
-                scores_dict["accept_length"]=accept_length.item() if type(accept_length) != int else accept_length
-                scores_dict_list.append(scores_dict)
-
-            acc_len_list.append(accept_length.item() if type(accept_length) != int else accept_length) # log accept length
             # print(accept_length)
             # with Timer("update_inference_inputs"):
-            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, out_log, sample_token = update_inference_inputs_log(
+            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, time_list = update_inference_inputs_log(
                 input_ids,
                 candidates,
                 best_candidate,
@@ -665,16 +650,9 @@ class EaModel(nn.Module):
                 current_length_data,
                 self,
                 hidden_state_new,
-                sample_p,
-                is_log_hidden_state,
-                is_log_scores
+                sample_p
             )
-            if is_log_hidden_state:
-                last_hidden_states = outputs["last_hidden_state"][:, retrieve_indices_old][:, best_candidate, : accept_length + 1]
-                hidden_state_logit = [last_hidden_states[0,-1], out_log[0][0,-1], out_log[1][0][0] , sample_p, out_log[2][0][0]]
-            
-            if is_log_scores:
-                scores_dict = out_log
+            time_lists.append(time_list)
 
             if is_llama3:
                 if stop_token_id in input_ids[0, input_len:].tolist():
@@ -689,13 +667,7 @@ class EaModel(nn.Module):
         if not log:
             return input_ids
         else:
-            if is_log_hidden_state:
-                return input_ids, new_token, idx, acc_len_list, hidden_state_list, logits_list, None
-            else:
-                if is_log_scores:
-                    return input_ids, new_token, idx, acc_len_list, None, None, scores_dict_list
-                else:
-                    return input_ids, new_token, idx, acc_len_list
+            return input_ids, new_token, idx
     
     @torch.no_grad()
     def eagenerate_rb(
