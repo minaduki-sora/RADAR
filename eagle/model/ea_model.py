@@ -841,7 +841,7 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
-        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state, sample_token = initialize_tree_with_eye(
+        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits = initialize_tree_with_eye(
             input_ids, self, past_key_values, logits_processor
         )
         new_token = 0
@@ -860,16 +860,14 @@ class EaModel(nn.Module):
                 input_ids,
                 retrieve_indices,
             )
-            # retrieve_indices=tree_buffers["retrieve_indices"]
-            # logits = logits[0, retrieve_indices]
+
             draft_tokens = torch.cat((draft_tokens, padding), dim=1)
             candidates = draft_tokens[0, retrieve_indices]
             best_candidate, accept_length, sample_p = evaluate_posterior(
                 logits, candidates, logits_processor
             )
-            # print(accept_length)
-            # with Timer("update_inference_inputs"):
-            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, hidden_state, sample_token = update_inference_inputs_with_eye(
+
+            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token = update_inference_inputs_with_eye(
                 input_ids,
                 candidates,
                 best_candidate,

@@ -333,7 +333,7 @@ def initialize_tree_with_eye(input_ids, model, past_key_values, logits_processor
             outputs["hidden_states"] = [x.to(ea_device) for x in outputs["hidden_states"]]
         hidden_states=torch.cat(outputs["hidden_states"],dim=-1)
     draft_tokens, retrieve_indices,tree_mask,tree_position_ids = model.ea_layer.topK_genrate_with_eye(hidden_states, input_ids, model.eye,logits_processor)
-    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig, hidden_states, token
+    return draft_tokens, retrieve_indices,tree_mask,tree_position_ids, orig
 
 def reset_tree_mode(
         model,
@@ -905,7 +905,7 @@ def update_inference_inputs_with_eye(
 
     new_token += accept_length + 1
 
-    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token, None, token
+    return input_ids, draft_tokens, retrieve_indices,tree_mask,tree_position_ids, new_token
 
 if __name__ == "__main__":
     logits = torch.randn(1, 5)

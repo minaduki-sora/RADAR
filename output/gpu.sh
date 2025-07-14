@@ -4,7 +4,7 @@
 LOG_DIR="./gpu_monitor_logs"  # 日志存放目录
 INTERVAL=300                  # 5分钟（单位：秒）
 MAX_DAYS=30                   # 日志保留天数
-DURATION=0                    # 运行时长（单位：秒），0表示无限运行
+DURATION=0                 # 运行时长（单位：秒），0表示无限运行
 
 # 显示帮助信息
 usage() {
