@@ -1564,17 +1564,17 @@ class Model(nn.Module):
         hidden = None
         # 4
         for i in range(depth):
-            # stime = time.time()
+            
             eye_logits, hidden = eye(scores[None], hidden)
             eye_probs = torch.softmax(eye_logits, dim=-1)
             r = random.random()
             if r < eye_probs[0,0]:
                 break
-            # etime = time.time()
-            # print(f"eye time: {etime - stime:.4f}s")
-            
             self.tree_mask = tree_mask
             position_ids = len_posi + self.position_ids
+            # stime = time.time()
+            # etime = time.time()
+            # print(f"eye time: {etime - stime:.8f}s")
             # with Timer("draft one"):
             out_hidden, past_key_values = self(input_hidden, input_ids=input_ids, past_key_values=past_key_values,
                                                position_ids=position_ids, use_cache=True)
