@@ -1564,11 +1564,14 @@ class Model(nn.Module):
         hidden = None
         # 4
         for i in range(depth):
+            # stime = time.time()
             eye_logits, hidden = eye(scores[None], hidden)
             eye_probs = torch.softmax(eye_logits, dim=-1)
             r = random.random()
             if r < eye_probs[0,0]:
                 break
+            # etime = time.time()
+            # print(f"eye time: {etime - stime:.4f}s")
             
             self.tree_mask = tree_mask
             position_ids = len_posi + self.position_ids

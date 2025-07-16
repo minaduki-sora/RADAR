@@ -133,7 +133,6 @@ def get_model_answers(
     for question in tqdm(questions):
 
         choices = []
-        
         for i in range(num_choices):
             torch.manual_seed(i)
             messages = [
@@ -157,7 +156,7 @@ def get_model_answers(
                 )
                 input_ids = tokenizer([prompt], add_special_tokens=False, ).input_ids
 
-                # # try:
+
                 # torch.cuda.synchronize()
                 # start_time = time.time()
                 output_ids, new_token, idx, scores_dict_list = model.eagenerate_rb(
@@ -168,7 +167,6 @@ def get_model_answers(
                 )
                 # torch.cuda.synchronize()
                 # total_time = time.time() - start_time
-                # acc_len_list_list.append(acc_len_list)
 
                 # save data
                 if hasattr(args, "save_dataset"):
@@ -263,7 +261,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
     )
-    parser.add_argument("--model-id", type=str, default="llama38b2_40")
+    # parser.add_argument("--model-id", type=str, default="llama38b2_40")
     parser.add_argument(
         "--bench-name",
         type=str,
@@ -279,9 +277,7 @@ if __name__ == "__main__":
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
-    # parser.add_argument("--log-file", type=str, help="The output log file.")
     parser.add_argument("--save-dataset", type=str, help="The path to save the dataset.")
-    # parser.add_argument("--save-hidden", type=int, default=0, help="0 for saving hidden_states and logits, 1 for saving treenodes")
     parser.add_argument(
         "--max-new-token",
         type=int,
@@ -331,7 +327,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.0,
+        default=1.0,
         help="The temperature for sampling. 0.0 means greedy decoding.",
     )
 
@@ -357,13 +353,6 @@ if __name__ == "__main__":
 
     print(f"Output to {answer_file}")
 
-    # if args.log_file:
-    #     log_file = args.log_file
-    # else:
-    #     log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
-
-    # print(f"Log output to {log_file}")
-
     run_eval(
         args.base_model_path,
         args.ea_model_path,
@@ -382,4 +371,3 @@ if __name__ == "__main__":
     )
 
     reorg_answer_file(answer_file)
-    # reorg_answer_file(log_file)
