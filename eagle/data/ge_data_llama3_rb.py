@@ -261,7 +261,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
     )
-    # parser.add_argument("--model-id", type=str, default="llama38b2_40")
+    parser.add_argument("--model-id", type=str, default="vicuna1.3 13B")
     parser.add_argument(
         "--bench-name",
         type=str,

@@ -169,12 +169,14 @@ def interleave_kv(input, output, incld, outcld):
     # past_key_values_data[i].shape=[num*2, bsz, num_key_value_heads, max_length, hidden_size // num_attention_heads], nums represent the num of layers stored in the same device
     bsz = output[0].shape[1]
     assert len(input) == len(output)
-    for i in range(len(input)):
-        assert input[i].shape[0] == output[i].shape[0]
-        tgt = input[i][..., :incld[0], :].repeat_interleave(bsz, dim=1)
-        dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
-        dst.copy_(tgt, non_blocking=True)
-    outcld.copy_(incld, non_blocking=True)
+    with torch.no_grad():
+        for i in range(len(input)):
+            assert input[i].shape[0] == output[i].shape[0]
+            tgt = input[i][..., :incld[0], :].expand(-1, bsz, -1, -1, -1)  
+            # tgt = input[i][..., :incld[0], :].repeat_interleave(bsz, dim=1)
+            dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
+            dst.copy_(tgt, non_blocking=True)
+        outcld.copy_(incld, non_blocking=True)
 
 def squeeze_kv(input, output, incld, outcld):
     """
@@ -186,9 +188,10 @@ def squeeze_kv(input, output, incld, outcld):
         outcld: output's current_length_data
     """
     assert len(input) == len(output)
-    for i in range(len(input)):
-        assert input[i].shape[0] == output[i].shape[0]
-        tgt = input[i][:, -1:, :, :incld[0], :] # select the last batch
-        dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
-        dst.copy_(tgt, non_blocking=True)
-    outcld.copy_(incld, non_blocking=True)
+    with torch.no_grad():
+        for i in range(len(input)):
+            assert input[i].shape[0] == output[i].shape[0]
+            tgt = input[i][:, -1:, :, :incld[0], :] # select the last batch
+            dst = torch.narrow(output[i], -2, 0, incld[0]) #output[i][..., :incld, :]
+            dst.copy_(tgt, non_blocking=True)
+        outcld.copy_(incld, non_blocking=True)

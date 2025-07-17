@@ -35,14 +35,14 @@ mkdir -p "$LOG_DIR"
 
 # 计算结束时间（如果设置了DURATION）
 if [ "$DURATION" -gt 0 ]; then
-    END_TIME=$(( $(date +%s) + DURATION ))
-    echo "监控将在 $(date -d @$END_TIME +'%Y-%m-%d %H:%M:%S') 自动结束"
+    RUN_END_TIME=$(( $(date +%s) + DURATION ))
+    echo "监控将在 $(date -d @$RUN_END_TIME +'%Y-%m-%d %H:%M:%S') 自动结束"
 fi
 
 # 主监控循环
 while true; do
     # 检查是否达到运行时长限制
-    if [ "$DURATION" -gt 0 ] && [ $(date +%s) -ge $END_TIME ]; then
+    if [ "$DURATION" -gt 0 ] && [ $(date +%s) -ge $RUN_END_TIME ]; then
         echo "达到设定的运行时长，监控结束"
         exit 0
     fi
