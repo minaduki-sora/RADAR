@@ -8,15 +8,12 @@ import json
 import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
-from accelerate.utils import set_seed
-set_seed(0)
-
 import time
 
 import shortuuid
 from fastchat.llm_judge.common import load_questions
+from fastchat.model import get_conversation_template
 from tqdm import tqdm
 
 try:
@@ -38,7 +35,6 @@ def run_eval(
         question_begin,
         question_end,
         answer_file,
-        # log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -75,7 +71,6 @@ def run_eval(
                 model_id,
                 questions[i: i + chunk_size],
                 answer_file,
-                # log_file,
                 max_new_token,
                 num_choices,
                 num_gpus_per_model,
@@ -96,7 +91,6 @@ def get_model_answers(
         model_id,
         questions,
         answer_file,
-        # log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -137,26 +131,17 @@ def get_model_answers(
     for _ in range(3):
         torch.manual_seed(0)
 
-        messages = [
-            {"role": "system",
-             "content": "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."},
-        ]
+        conv = get_conversation_template("vicuna")
         turns = []
         idxs = []
         new_tokens = []
         wall_time = []
         for j in range(len(question["turns"])):
             qs = question["turns"][j]
-            messages.append({
-                "role": "user",
-                "content": qs
-            })
-            prompt = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            input_ids = tokenizer([prompt],add_special_tokens=False,).input_ids
+            conv.append_message(conv.roles[0], qs)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
+            input_ids = tokenizer([prompt]).input_ids
 
             # try:
             torch.cuda.synchronize()
@@ -165,23 +150,17 @@ def get_model_answers(
             output_ids, new_token, idx, _ = model.eagenerate_log(
                 torch.as_tensor(input_ids).cuda(),
                 temperature=temperature,
-                log=True,
-                is_llama3=True,
+                log=True
             )
             torch.cuda.synchronize()
             total_time = time.time() - start_time
             output_ids = output_ids[0][len(input_ids[0]):]
             # be consistent with the template's stop_token_ids
-            stop_token_ids = [
-                tokenizer.eos_token_id,
-                tokenizer.convert_tokens_to_ids("<|eot_id|>")
-            ]
-
-            if stop_token_ids:
+            if conv.stop_token_ids:
                 stop_token_ids_index = [
                     i
                     for i, id in enumerate(output_ids)
-                    if id in stop_token_ids
+                    if id in conv.stop_token_ids
                 ]
                 if len(stop_token_ids_index) > 0:
                     output_ids = output_ids[: stop_token_ids_index[0]]
@@ -190,9 +169,9 @@ def get_model_answers(
                 output_ids,
                 spaces_between_special_tokens=False,
             )
-            # stop_str = "</s>"
-            # if stop_str and output.find(stop_str) > 0:
-            #     output = output[: output.find(stop_str)]
+            conv.stop_str = "</s>"
+            if conv.stop_str and output.find(conv.stop_str) > 0:
+                output = output[: output.find(conv.stop_str)]
             for special_token in tokenizer.special_tokens_map.values():
                 if isinstance(special_token, list):
                     for special_tok in special_token:
@@ -201,71 +180,51 @@ def get_model_answers(
                     output = output.replace(special_token, "")
             output = output.strip()
 
-
+            if conv.name == "xgen" and output.startswith("Assistant:"):
+                output = output.replace("Assistant:", "", 1).strip()
 
             turns.append(output)
             idxs.append(int(idx))
             new_tokens.append(int(new_token))
             wall_time.append(total_time)
-            messages.append({
-                "role": "assistant",
-                "content": output
-            })
+            conv.messages[-1][-1] = output
     print('Warmup done')
 
-    questions=questions[:4]
+    questions=questions[:5]
     for question in tqdm(questions):
 
         choices = []
-        # acc_len_list_list = []
         for i in range(num_choices):
             torch.manual_seed(i)
-            messages = [
-                {"role": "system",
-                 "content": "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."},
-            ]
+            conv = get_conversation_template("vicuna")
             turns = []
             idxs = []
             new_tokens = []
             wall_time = []
             for j in range(len(question["turns"])):
                 qs = question["turns"][j]
-                messages.append({
-                    "role": "user",
-                    "content": qs
-                })
-                prompt = tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                input_ids = tokenizer([prompt], add_special_tokens=False, ).input_ids
+                conv.append_message(conv.roles[0], qs)
+                conv.append_message(conv.roles[1], None)
+                prompt = conv.get_prompt()
+                input_ids = tokenizer([prompt]).input_ids
 
-                # try:
+
                 torch.cuda.synchronize()
                 start_time = time.time()
-
-                output_ids, new_token, idx, time_list = model.eagenerate_log(
+                output_ids, new_token, idx,time_list = model.eagenerate_log(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
-                    log=True,
-                    is_llama3=True,
+                    log=True
                 )
                 torch.cuda.synchronize()
                 total_time = time.time() - start_time
-                # acc_len_list_list.append(acc_len_list)
                 output_ids = output_ids[0][len(input_ids[0]):]
-                # be consistent with the template's stop_token_ids
-                stop_token_ids = [
-                    tokenizer.eos_token_id,
-                    tokenizer.convert_tokens_to_ids("<|eot_id|>")
-                ]
 
-                if stop_token_ids:
+                if conv.stop_token_ids:
                     stop_token_ids_index = [
                         i
                         for i, id in enumerate(output_ids)
-                        if id in stop_token_ids
+                        if id in conv.stop_token_ids
                     ]
                     if len(stop_token_ids_index) > 0:
                         output_ids = output_ids[: stop_token_ids_index[0]]
@@ -274,9 +233,8 @@ def get_model_answers(
                     output_ids,
                     spaces_between_special_tokens=False,
                 )
-                # stop_str = "</s>"
-                # if stop_str and output.find(stop_str) > 0:
-                #     output = output[: output.find(stop_str)]
+                if conv.stop_str and output.find(conv.stop_str) > 0:
+                    output = output[: output.find(conv.stop_str)]
                 for special_token in tokenizer.special_tokens_map.values():
                     if isinstance(special_token, list):
                         for special_tok in special_token:
@@ -285,14 +243,15 @@ def get_model_answers(
                         output = output.replace(special_token, "")
                 output = output.strip()
 
+                if conv.name == "xgen" and output.startswith("Assistant:"):
+                    output = output.replace("Assistant:", "", 1).strip()
+
+
                 turns.append(output)
                 idxs.append(int(idx))
                 new_tokens.append(int(new_token))
                 wall_time.append(total_time)
-                messages.append({
-                    "role": "assistant",
-                    "content": output
-                })
+                conv.messages[-1][-1] = output
             # torch.cuda.empty_cache()
             choices.extend(time_list)
 
@@ -328,15 +287,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/lyh/weights/hf/eagle3/llama31chat/8B/",
+        default="/home/v-yuhuili/b/res/v13/h0/checkpoints/state_1/",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/llama31chat/8B/",
+    parser.add_argument("--base-model-path", type=str, default="/home/v-yuhuili/b/weights/vicuna/13B/",
                         help="1")
     parser.add_argument(
         "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
     )
-    parser.add_argument("--model-id", type=str, default="llama38b2_40")
+    parser.add_argument("--model-id", type=str, default="ess-vicuna-70b-fp16")
     parser.add_argument(
         "--bench-name",
         type=str,
@@ -352,7 +311,6 @@ if __name__ == "__main__":
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
-    # parser.add_argument("--log-file", type=str, help="The output log file.")
     parser.add_argument(
         "--max-new-token",
         type=int,
@@ -377,7 +335,6 @@ if __name__ == "__main__":
         default=10,
         help="The maximum number of new generated tokens.",
     )
-
     parser.add_argument(
         "--num-choices",
         type=int,
@@ -402,7 +359,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.0,
+        default=1.0,
     )
 
     parser.add_argument(
@@ -423,16 +380,9 @@ if __name__ == "__main__":
     if args.answer_file:
         answer_file = args.answer_file
     else:
-        answer_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-ans.jsonl"
+        answer_file = f"{args.bench_name}/{args.model_id}.jsonl"
 
     print(f"Output to {answer_file}")
-
-    # if args.log_file:
-    #     log_file = args.log_file
-    # else:
-    #     log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
-
-    # print(f"Log output to {log_file}")
 
     run_eval(
         args.base_model_path,
@@ -442,7 +392,6 @@ if __name__ == "__main__":
         args.question_begin,
         args.question_end,
         answer_file,
-        # log_file,
         args.max_new_token,
         args.num_choices,
         args.num_gpus_per_model,
@@ -453,4 +402,3 @@ if __name__ == "__main__":
     )
 
     reorg_answer_file(answer_file)
-    # reorg_answer_file(log_file)

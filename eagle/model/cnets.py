@@ -873,14 +873,12 @@ class Model(nn.Module):
 
         # 4
         for i in range(depth):
+            stime = time.time()
             self.tree_mask = tree_mask
             position_ids = len_posi + self.position_ids
-            # with Timer("draft one"):
-            stime = time.time()
+            # with Timer("draft one")
             out_hidden, past_key_values = self(input_hidden, input_ids=input_ids, past_key_values=past_key_values,
                                                position_ids=position_ids, use_cache=True)
-            etime = time.time()
-            time_list.append(etime - stime)
             len_posi += 1
 
             # with Timer("sort1"):
@@ -914,6 +912,8 @@ class Model(nn.Module):
                 ss_token.append(topk_index+self.d2t[topk_index])
             scores_list.append(cu_scores)
             tree_mask = torch.cat((tree_mask[:, :, out_ids], self.tree_mask_init), dim=3)
+            etime = time.time()
+            time_list.append(etime - stime)
 
 
         scores_list = torch.cat(scores_list, dim=0).view(-1)

@@ -609,13 +609,17 @@ class EaModel(nn.Module):
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
         time_lists = []
-        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, time_list = initialize_tree_log(
+        # draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, time_list = initialize_tree_log(
+        #     input_ids, self, past_key_values, logits_processor
+        # )
+        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, hidden_state, sample_token = initialize_tree(
             input_ids, self, past_key_values, logits_processor
         )
-        time_lists.append(time_list)
+        # time_lists.append(time_list)
         new_token = 0
         max_length = max_length - self.ea_layer.total_tokens - 10
         for idx in range(max_length):
+            stime = time.time()
             # with Timer("all"):
             self.base_model.model.tree_mask = tree_mask
 
@@ -638,7 +642,7 @@ class EaModel(nn.Module):
             )
             # print(accept_length)
             # with Timer("update_inference_inputs"):
-            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, time_list = update_inference_inputs_log(
+            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, hidden_state, sample_token = update_inference_inputs(
                 input_ids,
                 candidates,
                 best_candidate,
@@ -652,7 +656,23 @@ class EaModel(nn.Module):
                 hidden_state_new,
                 sample_p
             )
-            time_lists.append(time_list)
+            # input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, time_list = update_inference_inputs_log(
+            #     input_ids,
+            #     candidates,
+            #     best_candidate,
+            #     accept_length,
+            #     retrieve_indices,
+            #     logits_processor,
+            #     new_token,
+            #     past_key_values_data,
+            #     current_length_data,
+            #     self,
+            #     hidden_state_new,
+            #     sample_p
+            # )
+            etime = time.time()
+            # time_lists.append(time_list)
+            time_lists.append(etime - stime)
 
             if is_llama3:
                 if stop_token_id in input_ids[0, input_len:].tolist():
@@ -667,7 +687,7 @@ class EaModel(nn.Module):
         if not log:
             return input_ids
         else:
-            return input_ids, new_token, idx
+            return input_ids, new_token, idx, time_lists
     
     @torch.no_grad()
     def eagenerate_rb(

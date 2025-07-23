@@ -38,7 +38,7 @@ def run_eval(
         question_begin,
         question_end,
         answer_file,
-        # log_file,
+        log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -75,7 +75,7 @@ def run_eval(
                 model_id,
                 questions[i: i + chunk_size],
                 answer_file,
-                # log_file,
+                log_file,
                 max_new_token,
                 num_choices,
                 num_gpus_per_model,
@@ -96,7 +96,7 @@ def get_model_answers(
         model_id,
         questions,
         answer_file,
-        # log_file,
+        log_file,
         max_new_token,
         num_choices,
         num_gpus_per_model,
@@ -217,7 +217,7 @@ def get_model_answers(
     for question in tqdm(questions):
 
         choices = []
-        # acc_len_list_list = []
+        acc_len_list_list = []
         for i in range(num_choices):
             torch.manual_seed(i)
             messages = [
@@ -245,7 +245,7 @@ def get_model_answers(
                 torch.cuda.synchronize()
                 start_time = time.time()
 
-                output_ids, new_token, idx, time_list = model.eagenerate_log(
+                output_ids, new_token, idx, acc_len_list = model.eagenerate_log(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True,
@@ -253,7 +253,7 @@ def get_model_answers(
                 )
                 torch.cuda.synchronize()
                 total_time = time.time() - start_time
-                # acc_len_list_list.append(acc_len_list)
+                acc_len_list_list.append(acc_len_list)
                 output_ids = output_ids[0][len(input_ids[0]):]
                 # be consistent with the template's stop_token_ids
                 stop_token_ids = [
@@ -294,7 +294,7 @@ def get_model_answers(
                     "content": output
                 })
             # torch.cuda.empty_cache()
-            choices.extend(time_list)
+            choices.append({"index": i, "turns": turns, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time})
 
         # Dump answers
         os.makedirs(os.path.dirname(answer_file), exist_ok=True)
@@ -305,6 +305,15 @@ def get_model_answers(
                 "model_id": model_id,
                 "choices": choices,
                 "tstamp": time.time(),
+            }
+            fout.write(json.dumps(ans_json) + "\n")
+        # Dump logs
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        with open(os.path.expanduser(log_file), "a") as fout:
+            ans_json = {
+                "question_id": question["question_id"],
+                "model_id": model_id,
+                "accept_len_list": acc_len_list_list,
             }
             fout.write(json.dumps(ans_json) + "\n")
 
@@ -352,7 +361,7 @@ if __name__ == "__main__":
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
-    # parser.add_argument("--log-file", type=str, help="The output log file.")
+    parser.add_argument("--log-file", type=str, help="The output log file.")
     parser.add_argument(
         "--max-new-token",
         type=int,
@@ -427,12 +436,12 @@ if __name__ == "__main__":
 
     print(f"Output to {answer_file}")
 
-    # if args.log_file:
-    #     log_file = args.log_file
-    # else:
-    #     log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
+    if args.log_file:
+        log_file = args.log_file
+    else:
+        log_file = f"output/{args.bench_name}/{args.model_id}-t-{args.temperature}-d-{args.depth}-topk-{args.top_k}-log.jsonl"
 
-    # print(f"Log output to {log_file}")
+    print(f"Log output to {log_file}")
 
     run_eval(
         args.base_model_path,
@@ -442,7 +451,7 @@ if __name__ == "__main__":
         args.question_begin,
         args.question_end,
         answer_file,
-        # log_file,
+        log_file,
         args.max_new_token,
         args.num_choices,
         args.num_gpus_per_model,
@@ -453,4 +462,4 @@ if __name__ == "__main__":
     )
 
     reorg_answer_file(answer_file)
-    # reorg_answer_file(log_file)
+    reorg_answer_file(log_file)
