@@ -1,0 +1,22 @@
+{
+    "lr": [5e-5, 1e-4],
+    "weight_decay": [1e-4],
+    "beta": [0.003084],
+    "alpha": [0.003],
+    "dropout": [0.1, 0.2],
+    "gamma": [0.99, 0.98],
+    "state_dim": 10,
+    "lstm_hidden": 128,
+    "mlp_hidden": 128,
+    "num_layers": 1,
+    "max_len": 7,
+    "num_epochs": 100,
+    "eagen_minus_time": 0.07067,
+    "eaforward_time": 0.002684,
+    "eye_time": 0.0004,
+    "bench_name": "shareGPT",
+    "base_model_name": "llama3.1",
+    "dataset_path": "../data/scores_rb/shareGPT-llama3-d7-topk10-t1",
+    "td": "t1d7",
+    "batch_size": 64
+}
