@@ -13,6 +13,7 @@ from datetime import datetime
 import json
 import argparse
 import itertools
+from tqdm import tqdm
 
 # --- 全局设置 ---
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -51,8 +52,7 @@ class LSTMPolicyNet(nn.Module):
         if deterministic:
             actions = torch.argmax(probs, dim=-1)
         else:
-            dist = torch.distributions.Categorical(probs)
-            actions = dist.sample()
+            actions = torch.multinomial(probs, num_samples=1).squeeze(-1)
         return actions, probs, hidden
 
     def reset_hidden(self, batch_size):
@@ -83,7 +83,7 @@ def normalize_probs(arr: np.array):
 class SharedStatesDataset(Dataset):
     def __init__(self, dataset, max_len=7):
         self.samples = []
-        for sample in dataset:
+        for sample in tqdm(dataset, desc="Loading dataset"):
             state_seq = [sample[f'eagle_{i}_forward'] for i in range(1, max_len + 1)]
             stops = [padding_stops(sample[f'action_{i}']['stop'], max_len=max_len + 2) for i in range(max_len + 1)]
             stops = [normalize_probs(np.array(stop)) for stop in stops]
@@ -144,12 +144,12 @@ def cal_avg_len(model, data_loader, eatime, speed_matrix):
     model.eval()
     len_dict = defaultdict(list)
     with torch.no_grad():
-        for states, stop_probs, avg_acc_lens_op in data_loader:
+        for states, stop_probs, avg_acc_lens_op in tqdm(data_loader, desc="Calculating Stats", leave=False):
             states, stop_probs, avg_acc_lens_op = states.to(device), stop_probs.to(device), avg_acc_lens_op.to(device)
             speed_matrix = speed_matrix.to(device)
             batch_size = states.size(0)
             hidden = model.reset_hidden(batch_size)
-            actions, _, _ = model.act(states, hidden)
+            actions, probs, _ = model.act(states, hidden)
             action_length = find_first_zero_pos(actions)
             len_dict["action_length"].extend(action_length.squeeze(1).cpu().numpy())
             
@@ -174,7 +174,7 @@ def evaluate_loss(model, data_loader, G):
     model.eval()
     total_loss = 0
     with torch.no_grad():
-        for states, stop_probs, _ in data_loader:
+        for states, stop_probs, _ in tqdm(data_loader, desc="Evaluating Loss", leave=False):
             states, stop_probs = states.to(device), stop_probs.to(device)
             logits, _ = model(states)
             log_probs = nn.functional.log_softmax(logits, dim=-1)
@@ -234,11 +234,6 @@ def save_to_csv(params, len_dict, filename):
 
 # --- 核心训练评估函数 ---
 def train_and_evaluate(params, train_loader, test_loader):
-    print("\n" + "="*50)
-    print(f"Starting training with parameters:")
-    print(json.dumps(params, indent=4))
-    print("="*50)
-
     # --- 参数设置 ---
     max_len = params['max_len']
     bench_name = params['bench_name']
@@ -281,10 +276,13 @@ def train_and_evaluate(params, train_loader, test_loader):
     train_losses, test_losses = [], []
     best_test_loss = float('inf')
 
-    for epoch in range(params['num_epochs']):
+    epoch_pbar = tqdm(range(params['num_epochs']), desc="Epochs")
+    for epoch in epoch_pbar:
         model.train()
         total_loss = 0
-        for states, stop_probs, _ in train_loader:
+        
+        batch_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params['num_epochs']}", leave=False)
+        for states, stop_probs, _ in batch_pbar:
             states, stop_probs = states.to(device), stop_probs.to(device)
             
             logits, _ = model(states)
@@ -309,6 +307,7 @@ def train_and_evaluate(params, train_loader, test_loader):
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             total_loss += loss.item()
+            batch_pbar.set_postfix(loss=loss.item())
 
         scheduler.step()
         
@@ -317,14 +316,13 @@ def train_and_evaluate(params, train_loader, test_loader):
         train_losses.append(avg_train_loss)
         test_losses.append(avg_test_loss)
         
-        if (epoch + 1) % 10 == 0:
-            print(f"Epoch {epoch+1}/{params['num_epochs']}, Train Loss: {avg_train_loss:.4f}, Test Loss: {avg_test_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.2e}")
+        epoch_pbar.set_postfix(train_loss=f"{avg_train_loss:.4f}", test_loss=f"{avg_test_loss:.4f}", lr=f"{scheduler.get_last_lr()[0]:.2e}")
 
         if avg_test_loss < best_test_loss:
             best_test_loss = avg_test_loss
             torch.save(model.state_dict(), model_path)
 
-    print(f"  -> Final best test loss: {best_test_loss:.4f}, model saved to {model_path}")
+    print(f"\n  -> Final best test loss: {best_test_loss:.4f}, model saved to {model_path}")
     
     # --- 结果可视化和保存 ---
     plt.figure()
@@ -378,13 +376,11 @@ if __name__ == '__main__':
     print(f"Loaded configuration from: {args.config}")
 
     # --- 生成参数组合 ---
-    # 将所有值为列表的参数识别为搜索参数
     search_params = {key: value for key, value in config.items() if isinstance(value, list)}
-    # 其他为固定参数
     fixed_params = {key: value for key, value in config.items() if not isinstance(value, list)}
 
-    keys, values = zip(*search_params.items())
-    param_combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
+    keys, values = zip(*search_params.items()) if search_params else ([], [])
+    param_combinations = [dict(zip(keys, v)) for v in itertools.product(*values)] if search_params else [{}]
     
     print(f"Starting hyperparameter search with {len(param_combinations)} combinations.")
 
@@ -405,13 +401,21 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     # --- 遍历所有组合进行训练 ---
-    for i, combo in enumerate(param_combinations):
+    main_pbar = tqdm(param_combinations, desc="Hyperparameter Search")
+    for i, combo in enumerate(main_pbar):
         params = {**fixed_params, **combo}
-        print(f"\n--- Running combination {i+1}/{len(param_combinations)} ---")
+        main_pbar.set_description(f"Combination {i+1}/{len(param_combinations)}")
+        
+        print("\n" + "="*80)
+        print(f"Running combination {i+1}/{len(param_combinations)}")
+        print(json.dumps(params, indent=4))
+        print("="*80)
+
         try:
             train_and_evaluate(params, train_loader, test_loader)
         except Exception as e:
-            print(f"An unexpected error occurred during training for combination {i+1}: {params}")
+            print(f"\nAn unexpected error occurred during training for combination {i+1}:")
+            print(f"Params: {json.dumps(params, indent=4)}")
             print(f"Error: {e}")
             # 记录错误日志
             with open("error_log.txt", "a") as f:
