@@ -52,7 +52,8 @@ class LSTMPolicyNet(nn.Module):
         if deterministic:
             actions = torch.argmax(probs, dim=-1)
         else:
-            actions = torch.multinomial(probs, num_samples=1).squeeze(-1)
+            dist = torch.distributions.Categorical(probs)
+            actions = dist.sample()
         return actions, probs, hidden
 
     def reset_hidden(self, batch_size):
@@ -156,7 +157,7 @@ def cal_avg_len(model, data_loader, eatime, speed_matrix, num_samples=10):
 
             for _ in range(num_samples):
                 # 1. 每次都从模型采样新的动作
-                hidden = model.reset_hidden(batch_size)
+                hidden = None
                 actions, _, _ = model.act(states, hidden) # [B, T]
                 action_length = find_first_zero_pos(actions) # [B, 1]
 
@@ -402,7 +403,7 @@ if __name__ == '__main__':
         return os.path.normpath(os.path.join(PROJECT_ROOT, path_from_config))
 
     parser = argparse.ArgumentParser(description="Train a policy model with hyperparameter grid search from a config file.")
-    parser.add_argument('--config', type=str, default='config.json', help='Path to the configuration JSON file.')
+    parser.add_argument('--config', type=str, default='eagle/train/train_debug.json', help='Path to the configuration JSON file.')
     args = parser.parse_args()
 
     # 3. --- 加载配置 ---
