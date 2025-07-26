@@ -387,36 +387,41 @@ def train_and_evaluate(params, train_loader, test_loader, project_root):
 # --- 主程序 ---
 if __name__ == '__main__':
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
-    print(f"Project Root detected: {PROJECT_ROOT}")
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+    print(f"Project Root correctly detected: {PROJECT_ROOT}")
 
+    # 2. --- 路径解析函数 ---
     def resolve_path(path_from_config):
-        """将配置文件中的相对路径转换为基于项目根目录的绝对路径"""
+        """
+        将配置文件中的路径（无论是相对还是绝对）转换为绝对路径。
+        如果路径是相对的，则假定它相对于项目根目录。
+        """
         if os.path.isabs(path_from_config):
-            return path_from_config # 如果已经是绝对路径，直接返回
-        return os.path.join(PROJECT_ROOT, path_from_config)
+            return path_from_config
+        # 使用 os.path.normpath 来正确处理 ".." 等情况
+        return os.path.normpath(os.path.join(PROJECT_ROOT, path_from_config))
 
     parser = argparse.ArgumentParser(description="Train a policy model with hyperparameter grid search from a config file.")
     parser.add_argument('--config', type=str, default='config.json', help='Path to the configuration JSON file.')
     args = parser.parse_args()
 
-    # --- 加载配置 ---
-    config_path = args.config
-    if not os.path.isabs(config_path):
-        # 如果config路径是相对的，我们假设它是相对于当前工作目录
-        config_path = os.path.join(os.getcwd(), config_path)
-    
+    # 3. --- 加载配置 ---
     try:
         with open(args.config, 'r') as f:
             config = json.load(f)
     except FileNotFoundError:
-        print(f"Error: Configuration file not found at {args.config}")
-        exit(1)
+        # 如果是相对路径，尝试从项目根目录解析
+        try:
+            config_path_from_root = resolve_path(args.config)
+            with open(config_path_from_root, 'r') as f:
+                config = json.load(f)
+            print(f"Loaded configuration from: {config_path_from_root}")
+        except FileNotFoundError:
+             print(f"Error: Configuration file not found at {args.config} or {config_path_from_root}")
+             exit(1)
     except json.JSONDecodeError:
         print(f"Error: Could not decode JSON from the configuration file: {args.config}")
         exit(1)
-
-    print(f"Loaded configuration from: {args.config}")
 
     # --- 生成参数组合 ---
     search_params = {key: value for key, value in config.items() if isinstance(value, list)}
@@ -427,16 +432,25 @@ if __name__ == '__main__':
     
     print(f"Starting hyperparameter search with {len(param_combinations)} combinations.")
 
-    # --- 数据加载 (只加载一次) ---
-    if not fixed_params.get('dataset_path'):
+    # --- 数据加载 ---
+    max_len = fixed_params.get('max_len', 7)
+    
+    dataset_path_from_config = fixed_params.get('dataset_path')
+    if not dataset_path_from_config:
         print("Error: 'dataset_path' must be defined in the config file.")
         exit(1)
-    max_len = fixed_params.get('max_len', 7)
-    dataset_path = resolve_path(fixed_params.get('dataset_path'))
+
+    dataset_path = resolve_path(dataset_path_from_config)
     batch_size = fixed_params.get('batch_size', 64)
+        
+    print(f"Attempting to load dataset from resolved path: {dataset_path}")
+    try:
+        ReplayDataset = datasets.load_from_disk(dataset_path)
+    except FileNotFoundError:
+        print(f"\nFATAL ERROR: The directory '{dataset_path}' does not exist.")
+        print("Please check the 'dataset_path' in your config file and ensure it's correct relative to the project root.")
+        exit(1)
     
-    print(f"Attempting to load dataset from: {dataset_path}")
-    ReplayDataset = datasets.load_from_disk(dataset_path)
     train_dataset = SharedStatesDataset(ReplayDataset["train"], max_len=max_len)
     test_dataset = SharedStatesDataset(ReplayDataset["test"], max_len=max_len)
     

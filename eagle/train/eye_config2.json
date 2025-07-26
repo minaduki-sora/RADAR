@@ -16,7 +16,7 @@
     "eye_time": 0.0004,
     "bench_name": "shareGPT",
     "base_model_name": "llama3.1",
-    "dataset_path": "../data/scores_rb/shareGPT-llama3-d7-topk10-t1",
+    "dataset_path": "./data/scores_rb/shareGPT-llama3-d7-topk10-t1",
     "td": "t1d7",
     "batch_size": 64
 }
