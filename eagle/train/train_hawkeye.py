@@ -16,7 +16,7 @@ import itertools
 from tqdm import tqdm
 
 # --- 全局设置 ---
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- 模型定义 ---
