@@ -261,7 +261,7 @@ def save_to_csv(params, len_dict, filename):
 
 
 # --- 核心训练评估函数 ---
-def train_and_evaluate(params, train_loader, test_loader):
+def train_and_evaluate(params, train_loader, test_loader, project_root):
     # --- 参数设置 ---
     max_len = params['max_len']
     bench_name = params['bench_name']
@@ -272,7 +272,7 @@ def train_and_evaluate(params, train_loader, test_loader):
     name_str = f"b-{params['beta']:.5f}-a-{params['alpha']:.5f}-g-{params['gamma']:.2f}-lr-{params['lr']:.0e}-wd-{params['weight_decay']:.0e}-dr-{params['dropout']:.2f}"
 
     # 创建输出目录
-    output_dir = f"../output/{bench_name}/{base_model_name}/{td}"
+    output_dir = os.path.join(project_root, f"output/{params['bench_name']}/{params['base_model_name']}/{params['td']}")
     pt_dir = os.path.join(output_dir, "pt")
     pic_dir = os.path.join(output_dir, "pic")
     os.makedirs(pt_dir, exist_ok=True)
@@ -386,12 +386,26 @@ def train_and_evaluate(params, train_loader, test_loader):
 
 # --- 主程序 ---
 if __name__ == '__main__':
-    print()
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
+    print(f"Project Root detected: {PROJECT_ROOT}")
+
+    def resolve_path(path_from_config):
+        """将配置文件中的相对路径转换为基于项目根目录的绝对路径"""
+        if os.path.isabs(path_from_config):
+            return path_from_config # 如果已经是绝对路径，直接返回
+        return os.path.join(PROJECT_ROOT, path_from_config)
+
     parser = argparse.ArgumentParser(description="Train a policy model with hyperparameter grid search from a config file.")
     parser.add_argument('--config', type=str, default='config.json', help='Path to the configuration JSON file.')
     args = parser.parse_args()
 
     # --- 加载配置 ---
+    config_path = args.config
+    if not os.path.isabs(config_path):
+        # 如果config路径是相对的，我们假设它是相对于当前工作目录
+        config_path = os.path.join(os.getcwd(), config_path)
+    
     try:
         with open(args.config, 'r') as f:
             config = json.load(f)
@@ -414,20 +428,21 @@ if __name__ == '__main__':
     print(f"Starting hyperparameter search with {len(param_combinations)} combinations.")
 
     # --- 数据加载 (只加载一次) ---
-    max_len = fixed_params.get('max_len', 7)
-    dataset_path = fixed_params.get('dataset_path')
-    batch_size = fixed_params.get('batch_size', 64)
-    
-    if not dataset_path:
+    if not fixed_params.get('dataset_path'):
         print("Error: 'dataset_path' must be defined in the config file.")
         exit(1)
-
+    max_len = fixed_params.get('max_len', 7)
+    dataset_path = resolve_path(fixed_params.get('dataset_path'))
+    batch_size = fixed_params.get('batch_size', 64)
+    
+    print(f"Attempting to load dataset from: {dataset_path}")
     ReplayDataset = datasets.load_from_disk(dataset_path)
     train_dataset = SharedStatesDataset(ReplayDataset["train"], max_len=max_len)
     test_dataset = SharedStatesDataset(ReplayDataset["test"], max_len=max_len)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
+
 
     # --- 遍历所有组合进行训练 ---
     main_pbar = tqdm(param_combinations, desc="Hyperparameter Search")
@@ -441,7 +456,7 @@ if __name__ == '__main__':
         print("="*80)
 
         try:
-            train_and_evaluate(params, train_loader, test_loader)
+            train_and_evaluate(params, train_loader, test_loader, PROJECT_ROOT)
         except Exception as e:
             print(f"\nAn unexpected error occurred during training for combination {i+1}:")
             print(f"Params: {json.dumps(params, indent=4)}")
