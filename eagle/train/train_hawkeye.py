@@ -16,7 +16,7 @@ import itertools
 from tqdm import tqdm
 
 # --- 全局设置 ---
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- 模型定义 ---
@@ -386,6 +386,7 @@ def train_and_evaluate(params, train_loader, test_loader):
 
 # --- 主程序 ---
 if __name__ == '__main__':
+    print()
     parser = argparse.ArgumentParser(description="Train a policy model with hyperparameter grid search from a config file.")
     parser.add_argument('--config', type=str, default='config.json', help='Path to the configuration JSON file.')
     args = parser.parse_args()
