@@ -140,34 +140,62 @@ def find_first_zero_pos(tensor):
     return first_zero_pos
 
 # --- 评估和统计 ---
-def cal_avg_len(model, data_loader, eatime, speed_matrix):
+def cal_avg_len(model, data_loader, eatime, speed_matrix, num_samples=10):
     model.eval()
+    device = next(model.parameters()).device
     len_dict = defaultdict(list)
     with torch.no_grad():
         for states, stop_probs, avg_acc_lens_op in tqdm(data_loader, desc="Calculating Stats", leave=False):
             states, stop_probs, avg_acc_lens_op = states.to(device), stop_probs.to(device), avg_acc_lens_op.to(device)
             speed_matrix = speed_matrix.to(device)
             batch_size = states.size(0)
-            hidden = model.reset_hidden(batch_size)
-            actions, probs, _ = model.act(states, hidden)
-            action_length = find_first_zero_pos(actions)
-            len_dict["action_length"].extend(action_length.squeeze(1).cpu().numpy())
-            
-            expanded_index = action_length.unsqueeze(-1).expand(-1, -1, stop_probs.size(-1))
-            action_stop_probs = stop_probs.gather(dim=1, index=expanded_index).squeeze(1)
-            
+
+            batch_action_lengths = []
+            batch_eye_speeds = []
+            batch_avg_acc_lens = []
+
+            for _ in range(num_samples):
+                # 1. 每次都从模型采样新的动作
+                hidden = model.reset_hidden(batch_size)
+                actions, _, _ = model.act(states, hidden) # [B, T]
+                action_length = find_first_zero_pos(actions) # [B, 1]
+
+                # 2. 根据新采样的动作，获取对应的接受概率分布
+                expanded_index = action_length.unsqueeze(-1).expand(-1, -1, stop_probs.size(-1))
+                action_stop_probs = stop_probs.gather(dim=1, index=expanded_index).squeeze(1) # [B, max_len+2]
+
+                # 3. 从接受概率中采样一次（因为动作已经每次都重新采样了）
+                acc_lens_sampled = torch.multinomial(action_stop_probs, num_samples=1) # [B, 1]
+
+                # 4. 计算本次采样的Hawkeye速度
+                speed_hawkeye = speed_matrix[acc_lens_sampled.squeeze(-1), action_length.squeeze(-1)] # [B]
+                
+                # 存储本次采样的结果
+                batch_action_lengths.append(action_length)
+                batch_eye_speeds.append(speed_hawkeye)
+                
+                # avg_acc_lens也应该是基于本次采样的动作
+                batch_avg_acc_lens.append(avg_acc_len_fn_tensor(action_stop_probs))
+
+            # 5. 对多次采样的结果取平均
+            # 将列表中的Tensors堆叠起来，然后在num_samples维度上取平均
+            avg_action_length = torch.stack(batch_action_lengths).float().mean(dim=0)
+            avg_eye_speed = torch.stack(batch_eye_speeds).mean(dim=0)
+            avg_acc_lens = torch.stack(batch_avg_acc_lens).mean(dim=0)
+
+            # 6. 将平均后的结果存入len_dict
+            len_dict["action_length"].extend(avg_action_length.squeeze(1).cpu().numpy())
+            len_dict["eye_speed"].extend(avg_eye_speed.cpu().numpy())
+            len_dict["avg_acc_lens"].extend(avg_acc_lens.cpu().numpy())
+
+            # Eagle speed 和 optimal diff 是固定的，不需要在循环内计算
             speed_ea = avg_acc_lens_op / eatime
             len_dict["eagle_speed"].extend(speed_ea.cpu().numpy())
             
-            acc_lens_sampled = torch.multinomial(action_stop_probs, num_samples=1)
-            speed_hawkeye = speed_matrix[acc_lens_sampled.squeeze(1), action_length.squeeze(1)]
-            len_dict["eye_speed"].extend(speed_hawkeye.cpu().numpy())
-            
-            avg_acc_lens = avg_acc_len_fn_tensor(action_stop_probs)
-            len_dict["avg_acc_lens"].extend(avg_acc_lens.cpu().numpy())
-            
+            # optimal_avg_acc_lens_diff 现在应该用平均后的 avg_acc_lens 计算
             optimal_avg_acc_lens_diff = avg_acc_lens - avg_acc_lens_op
             len_dict["optimal_avg_acc_lens_diff"].extend(optimal_avg_acc_lens_diff.cpu().numpy())
+            
     return len_dict
 
 def evaluate_loss(model, data_loader, G):
