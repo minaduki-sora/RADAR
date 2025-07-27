@@ -387,6 +387,7 @@ def train_and_evaluate(params, train_loader, test_loader, project_root):
 
 # --- 主程序 ---
 if __name__ == '__main__':
+    print("CUDA_VISIBLE_DEVICES:",os.environ["CUDA_VISIBLE_DEVICES"])
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
     print(f"Project Root correctly detected: {PROJECT_ROOT}")
