@@ -13,6 +13,7 @@ import time
 
 import shortuuid
 from fastchat.llm_judge.common import load_questions
+from fastchat.model import get_conversation_template
 from tqdm import tqdm
 
 try:
@@ -124,86 +125,7 @@ def get_model_answers(
     cuda_visible_devices = os.environ.get('CUDA_VISIBLE_DEVICES')
     print('CUDA VISIBLE DEVICES:', cuda_visible_devices)
 
-    question = questions[0]
-
-    # warmup
-    for _ in range(3):
-        torch.manual_seed(0)
-
-        messages = []
-        turns = []
-        idxs = []
-        new_tokens = []
-        wall_time = []
-        for j in range(1):
-            qs = question["turns"][j]
-            messages.append({
-                "role": "user",
-                "content": qs
-            })
-            prompt = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            input_ids = tokenizer([prompt],add_special_tokens=False,).input_ids
-
-            # try:
-            torch.cuda.synchronize()
-            start_time = time.time()
-
-            output_ids, new_token, idx, _ = model.eagenerate_log(
-                torch.as_tensor(input_ids).cuda(),
-                temperature=temperature,
-                log=True,
-                is_llama3=True,
-            )
-            torch.cuda.synchronize()
-            total_time = time.time() - start_time
-            output_ids = output_ids[0][len(input_ids[0]):]
-            # be consistent with the template's stop_token_ids
-            stop_token_ids = [
-                tokenizer.eos_token_id,
-                tokenizer.convert_tokens_to_ids("<|eot_id|>")
-            ]
-
-            if stop_token_ids:
-                stop_token_ids_index = [
-                    i
-                    for i, id in enumerate(output_ids)
-                    if id in stop_token_ids
-                ]
-                if len(stop_token_ids_index) > 0:
-                    output_ids = output_ids[: stop_token_ids_index[0]]
-
-            output = tokenizer.decode(
-                output_ids,
-                spaces_between_special_tokens=False,
-            )
-            # stop_str = "</s>"
-            # if stop_str and output.find(stop_str) > 0:
-            #     output = output[: output.find(stop_str)]
-            for special_token in tokenizer.special_tokens_map.values():
-                if isinstance(special_token, list):
-                    for special_tok in special_token:
-                        output = output.replace(special_tok, "")
-                else:
-                    output = output.replace(special_token, "")
-            output = output.strip()
-
-
-
-            turns.append(output)
-            idxs.append(int(idx))
-            new_tokens.append(int(new_token))
-            wall_time.append(total_time)
-            messages.append({
-                "role": "assistant",
-                "content": output
-            })
-    print('Warmup done')
-
-    questions=questions[:10]
+    questions=questions[:4]
     for question in tqdm(questions):
 
         choices = []
@@ -227,15 +149,13 @@ def get_model_answers(
                 )
                 input_ids = tokenizer([prompt], add_special_tokens=False, ).input_ids
 
-                # try:
+
                 torch.cuda.synchronize()
                 start_time = time.time()
-
-                output_ids, new_token, idx, time_list = model.eagenerate_log(
+                output_ids, new_token, idx, acclens = model.eagenerate_acclen(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
-                    log=True,
-                    is_llama3=True,
+                    log=True
                 )
                 torch.cuda.synchronize()
                 total_time = time.time() - start_time
@@ -270,6 +190,7 @@ def get_model_answers(
                         output = output.replace(special_token, "")
                 output = output.strip()
 
+
                 turns.append(output)
                 idxs.append(int(idx))
                 new_tokens.append(int(new_token))
@@ -279,7 +200,7 @@ def get_model_answers(
                     "content": output
                 })
             # torch.cuda.empty_cache()
-            choices.extend(time_list)
+            choices.append({"index": i, "turns": turns, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time, "accept_length": acclens})
 
         # Dump answers
         os.makedirs(os.path.dirname(answer_file), exist_ok=True)
@@ -321,7 +242,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
     )
-    parser.add_argument("--model-id", type=str, default="dsl")
+    parser.add_argument("--model-id", type=str, default="ess-vicuna-70b-fp16")
     parser.add_argument(
         "--bench-name",
         type=str,
