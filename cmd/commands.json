@@ -1,0 +1,8 @@
+[
+    {
+        "cmd":"python test.py", "output":""
+    },
+    {
+        "cmd":"python test.py", "output":""
+    }
+]
