@@ -1,8 +1,8 @@
 [
     {
-        "cmd":"python test.py", "output":""
+        "cmd":"python -m eagle.evaluation.gen_ea_we_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --eye-model-path output/shareGPT/llama3.1/t1d7/pt/b-0.03084-a-0.02000-g-0.99-lr-1e-04-wd-1e-04-dr-0.20.pt --bench-name mt_bench --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 10 --answer-file output/mt_bench/llama3.1/t1d7/time/hawkeye-b-0.03084-a-0.02000-g-0.99-lr-1e-04-wd-1e-04-dr-0.20-speedtest-10-1.jsonl", "output":"/home/majunjie/code/EAGLE/output/mt_bench/llama3.1/t1d7/time/hawkeye-b-0.03084-a-0.02000-g-0.99-lr-1e-04-wd-1e-04-dr-0.20-speedtest-10-2.jsonl"
     },
     {
-        "cmd":"python test.py", "output":""
+        "cmd":"python -m eagle.evaluation.gen_ea_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name mt_bench --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 10 --answer-file output/mt_bench/llama3.1/t1d7/time/eagle3-speedtest-10-2.jsonl", "output":"/home/majunjie/code/EAGLE/output/mt_bench/llama3.1/t1d7/time/eagle3-speedtest-10-2.jsonl"
     }
 ]
