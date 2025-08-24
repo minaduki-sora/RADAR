@@ -21,7 +21,7 @@ except ImportError:
 DEFAULT_COMMANDS_FILE = 'commands.json'
 DEFAULT_COMPLETED_LOG = 'completed_tasks.log'
 DEFAULT_MAIN_LOG = 'test_runner.log'
-IDLE_CHECK_INTERVAL = 300  # 任务空闲时检查GPU的间隔（秒）
+IDLE_CHECK_INTERVAL = 600  # 任务空闲时检查GPU的间隔（秒）
 RUNNING_CHECK_INTERVAL = 300  # 任务运行时检查GPU的间隔（秒）
 CONDA_ENV_NAME = 'eagle'
 
@@ -172,7 +172,7 @@ def main():
         logging.error(f"无法加载命令文件 '{commands_file_path}': {e}")
         sys.exit(1)
 
-    task_queue = deque(tasks[:]) # 调整任务起止
+    task_queue = deque(tasks[20:]) # 调整任务起止
     print(f"读取到 {len(task_queue)} 个任务。")
     
     try:

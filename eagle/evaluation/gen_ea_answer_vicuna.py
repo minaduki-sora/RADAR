@@ -9,6 +9,7 @@ import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 import time
 
 import shortuuid
