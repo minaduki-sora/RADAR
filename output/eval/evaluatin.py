@@ -47,7 +47,7 @@ BENCH_LIST = [
 NUM_CHOICES_LIST = [10]
 
 # 3. 定义结果文件的根目录
-OUTPUT_DIR_PREFIX = "../output"
+OUTPUT_DIR_PREFIX = "../"
 
 # 4. 定义处理的数据点数量 (使用 None 来处理完整数据集)
 NUM_DATAPOINTS = None # 设置为 None 来处理所有数据
