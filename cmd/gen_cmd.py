@@ -86,25 +86,42 @@ def generate_commands_in_order():
             # 内层循环处理每个 bench
             for bench_name in bench_list:
                 # 1. Baseline command
-                answer_file_baseline = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/baseline-speedtest-3.jsonl"
-                cmd_baseline = (
-                    f"python -m eagle.evaluation.gen_baseline_answer_{model_config['script_model_name']} "
-                    f"--ea-model-path {model_config['ea_model_path']} "
-                    f"--base-model-path {model_config['base_model_path']} "
-                    f"--bench-name {bench_name} "
-                    f"{STATIC_PARAMS} "
-                    f"--num-choices 1 "
-                    f"--answer-file {answer_file_baseline}"
-                )
-                final_commands.append({
-                    "idx": idx_counter,
-                    "cmd": cmd_baseline,
-                    "output": f"{output_path_prefix}{answer_file_baseline}"
-                })
-                idx_counter += 1
+                # answer_file_baseline = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/baseline-speedtest-3.jsonl"
+                # cmd_baseline = (
+                #     f"python -m eagle.evaluation.gen_baseline_answer_{model_config['script_model_name']} "
+                #     f"--ea-model-path {model_config['ea_model_path']} "
+                #     f"--base-model-path {model_config['base_model_path']} "
+                #     f"--bench-name {bench_name} "
+                #     f"{STATIC_PARAMS} "
+                #     f"--num-choices 1 "
+                #     f"--answer-file {answer_file_baseline}"
+                # )
+                # final_commands.append({
+                #     "idx": idx_counter,
+                #     "cmd": cmd_baseline,
+                #     "output": f"{output_path_prefix}{answer_file_baseline}"
+                # })
+                # idx_counter += 1
 
                 # 2. EA Answer command
-                answer_file_ea = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/eagle3-speedtest-{num_choices}.jsonl"
+                # answer_file_ea = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/eagle3-speedtest-{num_choices}.jsonl"
+                # cmd_ea = (
+                #     f"python -m eagle.evaluation.gen_ea_answer_{model_config['script_model_name']} "
+                #     f"--ea-model-path {model_config['ea_model_path']} "
+                #     f"--base-model-path {model_config['base_model_path']} "
+                #     f"--bench-name {bench_name} "
+                #     f"{STATIC_PARAMS} "
+                #     f"--num-choices {num_choices} "
+                #     f"--answer-file {answer_file_ea}"
+                # )
+                # final_commands.append({
+                #     "idx": idx_counter,
+                #     "cmd": cmd_ea,
+                #     "output": f"{output_path_prefix}{answer_file_ea}"
+                # })
+                # idx_counter += 1
+
+                answer_file_ea = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/eagle2-speedtest-{num_choices}.jsonl"
                 cmd_ea = (
                     f"python -m eagle.evaluation.gen_ea_answer_{model_config['script_model_name']} "
                     f"--ea-model-path {model_config['ea_model_path']} "
@@ -112,6 +129,7 @@ def generate_commands_in_order():
                     f"--bench-name {bench_name} "
                     f"{STATIC_PARAMS} "
                     f"--num-choices {num_choices} "
+                    f"--"
                     f"--answer-file {answer_file_ea}"
                 )
                 final_commands.append({
@@ -122,28 +140,28 @@ def generate_commands_in_order():
                 idx_counter += 1
 
                 # 3. EA WE Answer commands (one for each pt file)
-                if len(model_config["pt_list"]) == 0:
-                    continue
-                for pt_file in model_config["pt_list"]:
-                    pt_name = pt_file.replace('.pt', '')
-                    answer_file_ea_we = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/hawkeye-{pt_name}-speedtest-{num_choices}.jsonl"
-                    eye_model_path = f"{model_config['eye_model_path_prefix']}{pt_file}"
-                    cmd_ea_we = (
-                        f"python -m eagle.evaluation.gen_ea_we_answer_{model_config['script_model_name']} "
-                        f"--ea-model-path {model_config['ea_model_path']} "
-                        f"--base-model-path {model_config['base_model_path']} "
-                        f"--eye-model-path {eye_model_path} "
-                        f"--bench-name {bench_name} "
-                        f"{STATIC_PARAMS} "
-                        f"--num-choices {num_choices} "
-                        f"--answer-file {answer_file_ea_we}"
-                    )
-                    final_commands.append({
-                        "idx": idx_counter,
-                        "cmd": cmd_ea_we,
-                        "output": f"{output_path_prefix}{answer_file_ea_we}"
-                    })
-                    idx_counter += 1
+                # if len(model_config["pt_list"]) == 0:
+                #     continue
+                # for pt_file in model_config["pt_list"]:
+                #     pt_name = pt_file.replace('.pt', '')
+                #     answer_file_ea_we = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/hawkeye-{pt_name}-speedtest-{num_choices}.jsonl"
+                #     eye_model_path = f"{model_config['eye_model_path_prefix']}{pt_file}"
+                #     cmd_ea_we = (
+                #         f"python -m eagle.evaluation.gen_ea_we_answer_{model_config['script_model_name']} "
+                #         f"--ea-model-path {model_config['ea_model_path']} "
+                #         f"--base-model-path {model_config['base_model_path']} "
+                #         f"--eye-model-path {eye_model_path} "
+                #         f"--bench-name {bench_name} "
+                #         f"{STATIC_PARAMS} "
+                #         f"--num-choices {num_choices} "
+                #         f"--answer-file {answer_file_ea_we}"
+                #     )
+                #     final_commands.append({
+                #         "idx": idx_counter,
+                #         "cmd": cmd_ea_we,
+                #         "output": f"{output_path_prefix}{answer_file_ea_we}"
+                #     })
+                #     idx_counter += 1
     return final_commands
 
 if __name__ == "__main__":
