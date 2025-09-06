@@ -138,25 +138,47 @@ def main():
                             "Type": "Baseline", "Choice Index": i, "Speed": speed
                         })
 
-                # 2. 计算 Eagle (EA) 的速度并对比
+                # 2. 计算 Eagle2 的速度并对比 (仅针对 llama3 和 vicuna13)
+                if model_name in ["llama3.1", "vicuna13"]:
+                    eagle2_choices = 3
+                    eagle2_file = f"{base_path}/eagle2-speedtest-{eagle2_choices}.jsonl"
+                    eagle2_speed, eagle2_std, eagle2_speeds_per_choice = calculate_average_speed(eagle2_file, tokenizer, eagle2_choices, NUM_DATAPOINTS)
+                    if eagle2_speed is not None:
+                        ratio = (eagle2_speed / baseline_speed) if baseline_speed and baseline_speed > 0 else 0
+                        summary_results.append({
+                            "Model": model_name, "Benchmark": bench_name, "Choices": eagle2_choices,
+                            "Type": "Eagle2 (EA)", "Speed": f"{eagle2_speed:.2f}",
+                            "Baseline Speed": f"{baseline_speed:.2f}" if baseline_speed is not None else "N/A",
+                            "Speedup": f"{ratio:.2f}x", "Std Dev": f"{eagle2_std:.2f}"
+                        })
+                        # 记录 Eagle2 的详细速度
+                        if eagle2_speeds_per_choice:
+                            for i, speed in enumerate(eagle2_speeds_per_choice):
+                                detailed_results.append({
+                                    "Model": model_name, "Benchmark": bench_name,
+                                    "Type": "Eagle2 (EA)", "Choice Index": i, "Speed": speed
+                                })
+
+                # 3. 计算 Eagle3 (EA) 的速度并对比
                 eagle_file = f"{base_path}/eagle3-speedtest-{num_choices}.jsonl"
                 eagle_speed, eagle_std, eagle_speeds_per_choice = calculate_average_speed(eagle_file, tokenizer, num_choices, NUM_DATAPOINTS)
                 if eagle_speed is not None:
                     ratio = (eagle_speed / baseline_speed) if baseline_speed and baseline_speed > 0 else 0
                     summary_results.append({
                         "Model": model_name, "Benchmark": bench_name, "Choices": num_choices,
-                        "Type": "Eagle (EA)", "Speed": f"{eagle_speed:.2f}",
+                        "Type": "Eagle3 (EA)", "Speed": f"{eagle_speed:.2f}",
                         "Baseline Speed": f"{baseline_speed:.2f}" if baseline_speed is not None else "N/A",
                         "Speedup": f"{ratio:.2f}x", "Std Dev": f"{eagle_std:.2f}"
                     })
                     # 记录 Eagle 的详细速度
-                    for i, speed in enumerate(eagle_speeds_per_choice):
-                        detailed_results.append({
-                            "Model": model_name, "Benchmark": bench_name,
-                            "Type": "Eagle (EA)", "Choice Index": i, "Speed": speed
-                        })
+                    if eagle_speeds_per_choice:
+                        for i, speed in enumerate(eagle_speeds_per_choice):
+                            detailed_results.append({
+                                "Model": model_name, "Benchmark": bench_name,
+                                "Type": "Eagle3 (EA)", "Choice Index": i, "Speed": speed
+                            })
 
-                # 3. 计算 Hawkeye (EA-WE) 的速度并对比
+                # 4. 计算 Hawkeye (EA-WE) 的速度并对比
                 for pt_file in model_config["pt_list"]:
                     pt_name = pt_file.replace('.pt', '')
                     hawkeye_file = f"{base_path}/hawkeye-{pt_name}-speedtest-{num_choices}.jsonl"
@@ -171,11 +193,12 @@ def main():
                             "Speedup": f"{ratio:.2f}x", "Std Dev": f"{hawkeye_std:.2f}"
                         })
                         # 记录 Hawkeye 的详细速度
-                        for i, speed in enumerate(hawkeye_speeds_per_choice):
-                            detailed_results.append({
-                                "Model": model_name, "Benchmark": bench_name,
-                                "Type": hawkeye_type_name, "Choice Index": i, "Speed": speed
-                            })
+                        if hawkeye_speeds_per_choice:
+                            for i, speed in enumerate(hawkeye_speeds_per_choice):
+                                detailed_results.append({
+                                    "Model": model_name, "Benchmark": bench_name,
+                                    "Type": hawkeye_type_name, "Choice Index": i, "Speed": speed
+                                })
 
     # --- 处理并保存摘要结果 ---
     if summary_results:
@@ -188,7 +211,7 @@ def main():
         print(df_summary)
         print("="*80)
 
-        output_summary_csv = "speed_summary.csv"
+        output_summary_csv = "speed_summary-1.csv"
         df_summary.to_csv(output_summary_csv)
         print(f"\n[SUCCESS] Summary results saved to: {output_summary_csv}")
 
@@ -204,7 +227,7 @@ def main():
         print(f"Total detailed records: {len(df_detailed)}")
         print("="*80)
 
-        output_detailed_csv = "speed_per_choice_details.csv"
+        output_detailed_csv = "speed_per_choice_details-1.csv"
         df_detailed.to_csv(output_detailed_csv, index=False)
         print(f"\n[SUCCESS] Detailed per-choice speed results saved to: {output_detailed_csv}")
 
