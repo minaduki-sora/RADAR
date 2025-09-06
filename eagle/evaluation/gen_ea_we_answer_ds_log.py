@@ -8,7 +8,7 @@ import json
 import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 # from accelerate.utils import set_seed
 # set_seed(0)
 
@@ -32,6 +32,7 @@ except:
 def run_eval(
         base_model_path,
         ea_model_path,
+        eye_model_path,
         model_id,
         question_file,
         question_begin,
@@ -70,6 +71,7 @@ def run_eval(
             get_answers_func(
                 base_model_path,
                 ea_model_path,
+                eye_model_path,
                 model_id,
                 questions[i: i + chunk_size],
                 answer_file,
@@ -90,6 +92,7 @@ def run_eval(
 def get_model_answers(
         base_model_path,
         ea_model_path,
+        eye_model_path,
         model_id,
         questions,
         answer_file,
@@ -103,9 +106,9 @@ def get_model_answers(
     # temperature = 0.0
 
     model = EaModel.from_pretrained(
-        use_eagle3=False,
         base_model_path=base_model_path,
         ea_model_path=ea_model_path,
+        eye_model_path=eye_model_path,
         total_token=args.total_token,
         depth=args.depth,
         top_k=args.top_k,
@@ -132,17 +135,14 @@ def get_model_answers(
 
     # warmup
     for _ in range(3):
-        torch.manual_seed(0)
+        # torch.manual_seed(0)
 
-        messages = [
-            {"role": "system",
-             "content": "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."},
-        ]
+        messages = []
         turns = []
         idxs = []
         new_tokens = []
         wall_time = []
-        for j in range(len(question["turns"])):
+        for j in range(1):
             qs = question["turns"][j]
             messages.append({
                 "role": "user",
@@ -159,7 +159,7 @@ def get_model_answers(
             torch.cuda.synchronize()
             start_time = time.time()
 
-            output_ids, new_token, idx = model.eagenerate(
+            output_ids, new_token, idx, _ = model.eagenerate_with_eye(
                 torch.as_tensor(input_ids).cuda(),
                 temperature=temperature,
                 log=True,
@@ -210,21 +210,19 @@ def get_model_answers(
             })
     print('Warmup done')
 
-    # questions=questions[:100]
+    # questions=questions[6:]
     for question in tqdm(questions):
 
         choices = []
         for i in range(num_choices):
             torch.manual_seed(i)
-            messages = [
-                {"role": "system",
-                 "content": "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."},
-            ]
+            messages = []
             turns = []
             idxs = []
             new_tokens = []
+            action_lengths = []
             wall_time = []
-            for j in range(len(question["turns"])):
+            for j in range(1):
                 qs = question["turns"][j]
                 messages.append({
                     "role": "user",
@@ -241,7 +239,7 @@ def get_model_answers(
                 torch.cuda.synchronize()
                 start_time = time.time()
 
-                output_ids, new_token, idx = model.eagenerate(
+                output_ids, new_token, idx, action_length = model.eagenerate_with_eye(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True,
@@ -284,12 +282,13 @@ def get_model_answers(
                 idxs.append(int(idx))
                 new_tokens.append(int(new_token))
                 wall_time.append(total_time)
+                action_lengths.extend(action_length)
                 messages.append({
                     "role": "assistant",
                     "content": output
                 })
             # torch.cuda.empty_cache()
-            choices.append({"index": i, "turns": turns, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time})
+            choices.append({"index": i, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time, "action_lengths": action_lengths})
 
         # Dump answers
         os.makedirs(os.path.dirname(answer_file), exist_ok=True)
@@ -323,11 +322,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/lyh/weights/hf/eagle3/llama31chat/8B/",
+        default="/home/lyh/weights/hf/eagle3/DSL/8B3/",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/llama31chat/8B/",
+    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/DSL/8B/",
                         help="1")
+    parser.add_argument(
+        "--eye-model-path",
+        type=str,
+        default="output/shareGPT/llama3.1/t1d7/rate2gamma0.8.pt",
+        help="The path to the eye model weights.",
+    )
     parser.add_argument(
         "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
     )
@@ -396,7 +401,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.0,
+        default=1.0,
     )
 
     parser.add_argument(
@@ -424,6 +429,7 @@ if __name__ == "__main__":
     run_eval(
         args.base_model_path,
         args.ea_model_path,
+        args.eye_model_path,
         args.model_id,
         question_file,
         args.question_begin,

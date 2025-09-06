@@ -78,5 +78,55 @@
         "idx": 15,
         "cmd": "python -m eagle.evaluation.gen_baseline_answer_ds --ea-model-path ../weights/eagle/EAGLE3-DeepSeek-R1-Distill-LLaMA-8B --base-model-path ../weights/hf/DeepSeek-R1-Distill-Llama-8B --bench-name alpaca --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 1 --answer-file output/alpaca/deepseek/t1d7/time/baseline-speedtest-1.jsonl",
         "output": "/home/majunjie/code/EAGLE/output/alpaca/deepseek/t1d7/time/baseline-speedtest-1.jsonl"
+    },
+    {
+        "idx": 16,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name mt_bench --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mt_bench/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/mt_bench/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 17,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name humaneval --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/humaneval/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/humaneval/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 18,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name gsm8k --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/gsm8k/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/gsm8k/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 19,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name alpaca --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/alpaca/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/alpaca/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 20,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name mbpp --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mbpp/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/mbpp/llama3.1/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 21,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_vicuna --ea-model-path ../weights/eagle/EAGLE-Vicuna-13B-v1.3 --base-model-path ../weights/hf/vicuna-13b-v1.3 --bench-name mt_bench --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mt_bench/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/mt_bench/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 22,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_vicuna --ea-model-path ../weights/eagle/EAGLE-Vicuna-13B-v1.3 --base-model-path ../weights/hf/vicuna-13b-v1.3 --bench-name humaneval --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/humaneval/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/humaneval/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 23,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_vicuna --ea-model-path ../weights/eagle/EAGLE-Vicuna-13B-v1.3 --base-model-path ../weights/hf/vicuna-13b-v1.3 --bench-name gsm8k --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/gsm8k/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/gsm8k/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 24,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_vicuna --ea-model-path ../weights/eagle/EAGLE-Vicuna-13B-v1.3 --base-model-path ../weights/hf/vicuna-13b-v1.3 --bench-name alpaca --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/alpaca/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/alpaca/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl"
+    },
+    {
+        "idx": 25,
+        "cmd": "python -m eagle.evaluation.gen_ea2_answer_vicuna --ea-model-path ../weights/eagle/EAGLE-Vicuna-13B-v1.3 --base-model-path ../weights/hf/vicuna-13b-v1.3 --bench-name mbpp --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mbpp/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/mbpp/vicuna13/t1d7/time/eagle2-speedtest-3.jsonl"
     }
 ]

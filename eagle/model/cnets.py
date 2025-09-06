@@ -1562,6 +1562,7 @@ class Model(nn.Module):
         topk_cs_index = torch.arange(top_k, device=self.embed_tokens.weight.device)
         
         hidden = None
+        idx = 1
         # 4
         for i in range(depth):
             
@@ -1570,6 +1571,7 @@ class Model(nn.Module):
             r = random.random()
             if r < eye_probs[0,0]:
                 break
+            idx += 1
             self.tree_mask = tree_mask
             position_ids = len_posi + self.position_ids
             # stime = time.time()
@@ -1620,7 +1622,7 @@ class Model(nn.Module):
                 scores_list, ss_token, total_tokens, sample_token, parents_list, top_k, logits_processor
             )
 
-        return draft_tokens, retrieve_indices, tree_mask, tree_position_ids
+        return draft_tokens, retrieve_indices, tree_mask, tree_position_ids, idx
 
 import torch
 

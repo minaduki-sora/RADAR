@@ -44,7 +44,7 @@ MODELS_CONFIG = [
     {
         "model_name": "llama3.1",
         "script_model_name": "llama3chat",
-        "ea_model_path": "../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B",
+        "ea_model_path": "../weights/eagle/EAGLE-LLaMA3.1-Instruct-8B",# "../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B",
         "base_model_path": "../weights/hf/Meta-Llama-3.1-8B-Instruct",
         "eye_model_path_prefix": "output/shareGPT/llama3.1/t1d7/pt/",
         "pt_list": llama3_pt,
@@ -52,19 +52,19 @@ MODELS_CONFIG = [
     {
         "model_name": "vicuna13",
         "script_model_name": "vicuna",
-        "ea_model_path": "../weights/eagle/EAGLE3-Vicuna1.3-13B",
+        "ea_model_path": "../weights/eagle/EAGLE-Vicuna-13B-v1.3",# "../weights/eagle/EAGLE3-Vicuna1.3-13B",
         "base_model_path": "../weights/hf/vicuna-13b-v1.3",
         "eye_model_path_prefix": "output/shareGPT/vicuna13/t1d7/pt/",
         "pt_list": vicuna13_pt,
     },
-    {
-        "model_name": "deepseek",
-        "script_model_name": "ds",
-        "ea_model_path": "../weights/eagle/EAGLE3-DeepSeek-R1-Distill-LLaMA-8B",
-        "base_model_path": "../weights/hf/DeepSeek-R1-Distill-Llama-8B",
-        "eye_model_path_prefix": "output/shareGPT/ds/t1d7/pt/",
-        "pt_list": ds_pt,
-    },
+    # {
+    #     "model_name": "deepseek",
+    #     "script_model_name": "ds",
+    #     "ea_model_path": "../weights/eagle/EAGLE3-DeepSeek-R1-Distill-LLaMA-8B",
+    #     "base_model_path": "../weights/hf/DeepSeek-R1-Distill-Llama-8B",
+    #     "eye_model_path_prefix": "output/shareGPT/ds/t1d7/pt/",
+    #     "pt_list": ds_pt,
+    # },
 ]
 
 # 静态参数
@@ -77,7 +77,7 @@ def generate_commands_in_order():
     顺序: num_choices=5 (llama, vicuna), num_choices=10 (llama, vicuna)
     """
     final_commands = []
-    idx_counter = 0
+    idx_counter = 16
     
     # 外层循环控制 num_choices，确保所有 5 的测试先于 10
     for num_choices in NUM_CHOICES_LIST:
@@ -121,15 +121,14 @@ def generate_commands_in_order():
                 # })
                 # idx_counter += 1
 
-                answer_file_ea = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/eagle2-speedtest-{num_choices}.jsonl"
+                answer_file_ea = f"output/{bench_name}/{model_config['model_name']}/t1d7/time/eagle2-speedtest-3.jsonl"
                 cmd_ea = (
-                    f"python -m eagle.evaluation.gen_ea_answer_{model_config['script_model_name']} "
+                    f"python -m eagle.evaluation.gen_ea2_answer_{model_config['script_model_name']} "
                     f"--ea-model-path {model_config['ea_model_path']} "
                     f"--base-model-path {model_config['base_model_path']} "
                     f"--bench-name {bench_name} "
                     f"{STATIC_PARAMS} "
-                    f"--num-choices {num_choices} "
-                    f"--"
+                    f"--num-choices 3 "
                     f"--answer-file {answer_file_ea}"
                 )
                 final_commands.append({

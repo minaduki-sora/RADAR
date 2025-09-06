@@ -861,7 +861,8 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
-        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits = initialize_tree_with_eye(
+        action_length = []
+        draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, i = initialize_tree_with_eye(
             input_ids, self, past_key_values, logits_processor
         )
         new_token = 0
@@ -887,7 +888,8 @@ class EaModel(nn.Module):
                 logits, candidates, logits_processor
             )
 
-            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token = update_inference_inputs_with_eye(
+            action_length.append(i)
+            input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, i = update_inference_inputs_with_eye(
                 input_ids,
                 candidates,
                 best_candidate,
@@ -915,8 +917,8 @@ class EaModel(nn.Module):
         if not log:
             return input_ids
         else:
-            return input_ids, new_token, idx
-        
+            return input_ids, new_token, idx, action_length
+
     @torch.no_grad()
     def eagenerate_acclen(
             self,
