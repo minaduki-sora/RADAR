@@ -219,7 +219,7 @@ def get_model_answers(
 
                 torch.cuda.synchronize()
                 start_time = time.time()
-                output_ids, new_token, idx, action_lengths = model.eagenerate_with_eye(
+                output_ids, new_token, idx, action_length = model.eagenerate_with_eye(
                     torch.as_tensor(input_ids).cuda(),
                     temperature=temperature,
                     log=True
@@ -259,7 +259,7 @@ def get_model_answers(
                 idxs.append(int(idx))
                 new_tokens.append(int(new_token))
                 wall_time.append(total_time)
-                action_lengths.extend(action_lengths)
+                action_lengths.append(action_length)
                 conv.messages[-1][-1] = output
             # torch.cuda.empty_cache()
             choices.append({"index": i, "idxs": idxs, "new_tokens": new_tokens, "wall_time": wall_time, "action_lengths": action_lengths})

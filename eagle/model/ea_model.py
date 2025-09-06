@@ -861,7 +861,7 @@ class EaModel(nn.Module):
 
         input_len = input_ids.shape[1]
         reset_tree_mode(self)
-        action_length = []
+        action_length = 0
         draft_tokens, retrieve_indices, tree_mask, tree_position_ids, logits, i = initialize_tree_with_eye(
             input_ids, self, past_key_values, logits_processor
         )
@@ -888,7 +888,7 @@ class EaModel(nn.Module):
                 logits, candidates, logits_processor
             )
 
-            action_length.append(i)
+            action_length += i
             input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, i = update_inference_inputs_with_eye(
                 input_ids,
                 candidates,
