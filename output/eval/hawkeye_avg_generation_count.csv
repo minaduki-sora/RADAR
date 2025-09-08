@@ -1,0 +1,4 @@
+Model,Type,alpaca,gsm8k,humaneval,mbpp,mt_bench
+deepseek,Hawkeye (b-0.03237-a-0.01000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10),5.85,7.20,6.55,6.47,6.10
+llama3.1,Hawkeye (b-0.03084-a-0.02000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10),6.20,6.19,6.66,6.60,5.25
+vicuna13,Hawkeye (b-0.02877-a-0.06000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10),6.83,7.26,7.20,7.26,6.88

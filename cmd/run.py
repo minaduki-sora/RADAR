@@ -172,7 +172,7 @@ def main():
         logging.error(f"无法加载命令文件 '{commands_file_path}': {e}")
         sys.exit(1)
 
-    task_queue = deque(tasks[26:]) # 调整任务起止
+    task_queue = deque(tasks[49:]) # 调整任务起止
     print(f"读取到 {len(task_queue)} 个任务。")
     
     try:

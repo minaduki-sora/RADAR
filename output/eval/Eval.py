@@ -56,9 +56,11 @@ NUM_DATAPOINTS = None # 设置为 None 来处理所有数据
 # 脚本核心逻辑
 # ==============================================================================
 
-def calculate_metrics(jsonl_file, tokenizer, num_choices, num_datapoints=None):
+def calculate_metrics(jsonl_file, num_choices, num_datapoints=None):
     """
     从指定的jsonl文件中计算平均解码速度、平均接受长度以及每个choice的详细指标。
+    使用 "new_tokens" 字段计算总token数。
+    根据最新的逻辑计算平均接受长度。
     """
     if not os.path.exists(jsonl_file):
         return (None,) * 6
@@ -87,53 +89,50 @@ def calculate_metrics(jsonl_file, tokenizer, num_choices, num_datapoints=None):
                 continue
             
             choice = datapoint["choices"][j]
-            answer_turns = choice['turns']
-            wall_time = sum(choice['wall_time'])
-            
-            total_tokens = sum(len(tokenizer(turn).input_ids) - 1 for turn in answer_turns)
+            wall_time = sum(choice.get('wall_time', [0]))
+            total_tokens = sum(choice.get('new_tokens', [0]))
 
             # 计算速度
-            if wall_time > 0:
+            if wall_time > 0 and total_tokens > 0:
                 speeds_for_this_choice.append(total_tokens / wall_time)
 
-            # 计算平均接受长度 (修正逻辑)
+            # 计算平均接受长度 (最终修正逻辑)
             idxs = choice.get('idxs')
-            # 检查idxs是否存在，是否为非空列表，且第一个元素是否大于0
-            if idxs and len(idxs) > 0 and idxs[0] > 0:
-                acceptance_lengths_for_this_choice.append(total_tokens / (idxs[0]+1))
+            # 检查idxs是否存在且为非空列表
+            if idxs and isinstance(idxs, list) and len(idxs) > 0:
+                # 总验证次数 = 每个idxs值+1后再求和
+                total_verification_steps = sum(idx + 1 for idx in idxs)
+                if total_verification_steps > 0 and total_tokens > 0:
+                    acceptance_lengths_for_this_choice.append(total_tokens / total_verification_steps)
+                else:
+                    acceptance_lengths_for_this_choice.append(0)
             else:
-                # 如果不满足条件，接受长度为0
                 acceptance_lengths_for_this_choice.append(0)
 
         if speeds_for_this_choice:
             speeds_per_choice.append(np.mean(speeds_for_this_choice))
         if acceptance_lengths_for_this_choice:
-            # 过滤掉为0的接受长度，只对有效值求平均
             valid_lengths = [l for l in acceptance_lengths_for_this_choice if l > 0]
             if valid_lengths:
                 acceptance_lengths_per_choice.append(np.mean(valid_lengths))
             else:
                 acceptance_lengths_per_choice.append(0)
 
-
     if not speeds_per_choice:
         return (None,) * 6
 
-    # 计算速度的最终统计
-    final_avg_speed = np.mean(speeds_per_choice)
-    final_std_dev_speed = np.std(speeds_per_choice)
+    # 计算最终统计
+    final_avg_speed = np.mean(speeds_per_choice) if speeds_per_choice else 0
+    final_std_dev_speed = np.std(speeds_per_choice) if speeds_per_choice else 0
     
-    # 计算接受长度的最终统计
     valid_final_lengths = [l for l in acceptance_lengths_per_choice if l > 0]
     if valid_final_lengths:
         final_avg_acceptance_length = np.mean(valid_final_lengths)
-        final_std_dev_acceptance_length = np.std(valid_final_lengths)
     else:
         final_avg_acceptance_length = 0
-        final_std_dev_acceptance_length = 0
 
     return (final_avg_speed, final_std_dev_speed, speeds_per_choice, 
-            final_avg_acceptance_length, final_std_dev_acceptance_length, acceptance_lengths_per_choice)
+            final_avg_acceptance_length, None, acceptance_lengths_per_choice)
 
 
 def main():
@@ -146,10 +145,9 @@ def main():
         print(f"\n{'='*30}\nProcessing Model: {model_name}\n{'='*30}")
         
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_config["tokenizer_path"])
+            AutoTokenizer.from_pretrained(model_config["tokenizer_path"])
         except Exception as e:
-            print(f"Error loading tokenizer for {model_name}. Skipping. Error: {e}")
-            continue
+            print(f"Warning: Could not load tokenizer for {model_name}. This is not required for current calculations but might indicate a config issue. Error: {e}")
 
         for bench_name in BENCH_LIST:
             for num_choices in NUM_CHOICES_LIST:
@@ -157,7 +155,7 @@ def main():
 
                 # 1. 计算 Baseline 的指标
                 baseline_file = f"{base_path}/baseline-speedtest-3.jsonl"
-                baseline_speed, _, bl_speeds_pc, _, _, bl_acc_lens_pc = calculate_metrics(baseline_file, tokenizer, 1, NUM_DATAPOINTS)
+                baseline_speed, _, bl_speeds_pc, _, _, bl_acc_lens_pc = calculate_metrics(baseline_file, 1, NUM_DATAPOINTS)
                 
                 if bl_speeds_pc:
                     for i, (speed, acc_len) in enumerate(zip(bl_speeds_pc, bl_acc_lens_pc)):
@@ -169,7 +167,7 @@ def main():
 
                 # --- 辅助函数：记录结果 ---
                 def record_results(type_name, choices, speed, std_speed, speeds_pc, acc_len, std_acc_len, acc_lens_pc):
-                    if speed is not None:
+                    if speed is not None and speed > 0:
                         speedup_ratio = (speed / baseline_speed) if baseline_speed and baseline_speed > 0 else 0
                         summary_results.append({
                             "Model": model_name, "Benchmark": bench_name, "Choices": choices,
@@ -186,16 +184,16 @@ def main():
                                     "Accept Length": al if al > 0 else "N/A"
                                 })
 
-                # 2. 计算 Eagle2 的指标 (仅针对特定模型)
+                # 2. 计算 Eagle2 的指标
                 if model_name in ["llama3.1", "vicuna13"]:
                     eagle2_choices = 3
                     eagle2_file = f"{base_path}/eagle2-speedtest-{eagle2_choices}.jsonl"
-                    metrics = calculate_metrics(eagle2_file, tokenizer, eagle2_choices, NUM_DATAPOINTS)
+                    metrics = calculate_metrics(eagle2_file, eagle2_choices, NUM_DATAPOINTS)
                     record_results("Eagle2 (EA)", eagle2_choices, *metrics)
 
                 # 3. 计算 Eagle3 的指标
                 eagle_file = f"{base_path}/eagle3-speedtest-{num_choices}.jsonl"
-                metrics = calculate_metrics(eagle_file, tokenizer, num_choices, NUM_DATAPOINTS)
+                metrics = calculate_metrics(eagle_file, num_choices, NUM_DATAPOINTS)
                 record_results("Eagle3 (EA)", num_choices, *metrics)
 
                 # 4. 计算 Hawkeye 的指标
@@ -203,7 +201,7 @@ def main():
                     pt_name = pt_file.replace('.pt', '')
                     hawkeye_file = f"{base_path}/hawkeye-{pt_name}-speedtest-{num_choices}.jsonl"
                     hawkeye_type_name = f"Hawkeye ({pt_name})"
-                    metrics = calculate_metrics(hawkeye_file, tokenizer, num_choices, NUM_DATAPOINTS)
+                    metrics = calculate_metrics(hawkeye_file, num_choices, NUM_DATAPOINTS)
                     record_results(hawkeye_type_name, num_choices, *metrics)
 
     # --- 处理并保存摘要结果 ---
@@ -228,7 +226,7 @@ def main():
         print("\n" + "="*90)
         print(" " * 30 + "Detailed Metrics Per Choice (Sample)")
         print("="*90)
-        print(df_detailed.head()) # 打印前5行作为示例
+        print(df_detailed.head())
         print("...")
         print(f"Total detailed records: {len(df_detailed)}")
         print("="*90)

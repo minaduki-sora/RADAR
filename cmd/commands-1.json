@@ -243,5 +243,10 @@
         "idx": 48,
         "cmd": "python -m eagle.evaluation.gen_ea_we_answer_ds_log --ea-model-path ../weights/eagle/EAGLE3-DeepSeek-R1-Distill-LLaMA-8B --base-model-path ../weights/hf/DeepSeek-R1-Distill-Llama-8B --eye-model-path output/shareGPT/ds/t1d7/pt/b-0.03237-a-0.01000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10.pt --bench-name mbpp --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mbpp/deepseek/t1d7/time/hawkeye-b-0.03237-a-0.01000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10-action-3.jsonl",
         "output": "/home/majunjie/code/EAGLE/output/mbpp/deepseek/t1d7/time/hawkeye-b-0.03237-a-0.01000-g-0.99-lr-1e-04-wd-1e-04-dr-0.10-action-3.jsonl"
+    },
+    {
+        "idx": 49,
+        "cmd": "python -m eagle.evaluation.gen_ea_answer_llama3chat --ea-model-path ../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name mbpp --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --num-choices 3 --answer-file output/mbpp/llama3.1/t1d7/time/eagle3-speedtest-3.jsonl",
+        "output": "/home/majunjie/code/EAGLE/output/mbpp/llama3.1/t1d7/time/eagle3-speedtest-3.jsonl"
     }
 ]
