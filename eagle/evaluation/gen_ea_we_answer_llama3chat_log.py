@@ -288,7 +288,8 @@ def get_model_answers(
                 idxs.append(int(idx))
                 new_tokens.append(int(new_token))
                 wall_time.append(total_time)
-                action_lengths.append(action_length)
+                # action_lengths.append(action_length)
+                action_lengths.extend(action_length)
                 messages.append({
                     "role": "assistant",
                     "content": output
