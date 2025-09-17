@@ -888,7 +888,7 @@ class EaModel(nn.Module):
                 logits, candidates, logits_processor
             )
 
-            action_length.append(accept_length)
+            action_length.append(i)
             input_ids, draft_tokens, retrieve_indices, tree_mask, tree_position_ids, new_token, i = update_inference_inputs_with_eye(
                 input_ids,
                 candidates,
