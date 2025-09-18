@@ -8,7 +8,7 @@ import json
 import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
 
@@ -111,8 +111,7 @@ def get_model_answers(
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
         # load_in_8bit=True,
-        device_map="auto",
-        use_eagle3=args.use_eagle3,
+        device_map="auto"
     )
 
     tokenizer = model.get_tokenizer()
@@ -210,7 +209,7 @@ def get_model_answers(
             })
     print('Warmup done')
 
-    # questions=questions[6:]
+    # questions=questions[:100]
     for question in tqdm(questions):
 
         choices = []
@@ -357,19 +356,19 @@ if __name__ == "__main__":
         "--total-token",
         type=int,
         default=60,
-        help="total-token = The total number of drafted tokens in the tree + 1",
+        help="The maximum number of new generated tokens.",
     )
     parser.add_argument(
         "--depth",
         type=int,
         default=5,
-        help="depth = The maximum number of draft length - 1",
+        help="The maximum number of new generated tokens.",
     )
     parser.add_argument(
         "--top-k",
         type=int,
         default=10,
-        help="The maximum number of drafted tokens in each layer.",
+        help="The maximum number of new generated tokens.",
     )
 
     parser.add_argument(
@@ -404,15 +403,8 @@ if __name__ == "__main__":
         type=str,
         default="mc_sim_7b_63",
     )
-    parser.add_argument(
-        "--use_eagle3",
-        action="store_true"
-    )
 
     args = parser.parse_args()
-
-    for k,v in vars(args).items():
-        print(f"{k}={v}")
 
     args.model_id = args.model_id + "-temperature-" + str(args.temperature)
     if args.num_gpus_total // args.num_gpus_per_model > 1:

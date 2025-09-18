@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='eagle-llm',
-    version='3.0.0',
+    name='radar',
+    version='1.0.0',
     description='Accelerating LLMs by 3x with No Quality Loss',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    author_email='yuhui.li@stu.pku.edu.cn',
-    url='https://github.com/SafeAILab/EAGLE',
+    author_email='mahiru@mail.ustc.edu.cn',
+    url='https://github.com/minaduki-sora/RADAR',
     packages=find_packages(),
     install_requires=[
         'torch==2.0.1',

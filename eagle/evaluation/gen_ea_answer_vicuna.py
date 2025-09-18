@@ -9,6 +9,7 @@ import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 import time
 
 import shortuuid
@@ -109,8 +110,7 @@ def get_model_answers(
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
         # load_in_8bit=True,
-        device_map="auto",
-        use_eagle3=args.use_eagle3,
+        device_map="auto"
     )
 
     tokenizer = model.get_tokenizer()
@@ -369,15 +369,7 @@ if __name__ == "__main__":
         default="mc_sim_7b_63",
     )
 
-    parser.add_argument(
-        "--use-eagle3",
-        action="store_true"
-    )
-
     args = parser.parse_args()
-
-    for k,v in vars(args).items():
-        print(f"{k}={v}")
 
     args.model_id = args.model_id + "-temperature-" + str(args.temperature)
     if args.num_gpus_total // args.num_gpus_per_model > 1:

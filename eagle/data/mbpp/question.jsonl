@@ -1,0 +1,90 @@
+{"question_id": 511, "turns": ["Write a python function to find minimum sum of factors of a given number."]}
+{"question_id": 512, "turns": ["Write a function to count the element frequency in the mixed nested tuple."]}
+{"question_id": 513, "turns": ["Write a function to convert tuple into list by adding the given string after every element."]}
+{"question_id": 514, "turns": ["Write a function to find the summation of tuple elements in the given tuple list."]}
+{"question_id": 515, "turns": ["Write a function to check if there is a subset with sum divisible by m."]}
+{"question_id": 516, "turns": ["Write a function to sort a list of elements using radix sort."]}
+{"question_id": 517, "turns": ["Write a python function to find the largest postive number from the given list."]}
+{"question_id": 518, "turns": ["Write a function to find the square root of a perfect number."]}
+{"question_id": 519, "turns": ["Write a function to calculate volume of a tetrahedron."]}
+{"question_id": 520, "turns": ["Write a function to find the lcm of the given array elements."]}
+{"question_id": 521, "turns": ["Write a function to print check if the triangle is scalene or not."]}
+{"question_id": 522, "turns": ["Write a function to find the longest bitonic subsequence for the given array."]}
+{"question_id": 523, "turns": ["Write a function to check whether a given string has a capital letter, a lower case letter, a number and specified length using lambda function."]}
+{"question_id": 524, "turns": ["Write a function to find the sum of maximum increasing subsequence of the given array."]}
+{"question_id": 525, "turns": ["Write a python function to check whether two given lines are parallel or not."]}
+{"question_id": 526, "turns": ["Write a python function to capitalize first and last letters of each word of a given string."]}
+{"question_id": 527, "turns": ["Write a function to find all pairs in an integer array whose sum is equal to a given number."]}
+{"question_id": 528, "turns": ["Write a function to find the list of lists with minimum length."]}
+{"question_id": 529, "turns": ["Write a function to find the nth jacobsthal-lucas number."]}
+{"question_id": 530, "turns": ["Write a function to find the ration of negative numbers in an array of integers."]}
+{"question_id": 531, "turns": ["Write a function to find minimum number of coins that make a given value."]}
+{"question_id": 532, "turns": ["Write a function to check if the two given strings are permutations of each other."]}
+{"question_id": 533, "turns": ["Write a function to remove particular data type elements from the given tuple."]}
+{"question_id": 534, "turns": ["Write a function to search a literals string in a string and also find the location within the original string where the pattern occurs."]}
+{"question_id": 535, "turns": ["Write a function to find the top or bottom surface area of a cylinder."]}
+{"question_id": 536, "turns": ["Write a function to select the nth items of a list."]}
+{"question_id": 537, "turns": ["Write a python function to find the first repeated word in a given string."]}
+{"question_id": 538, "turns": ["Write a python function to convert a given string list to a tuple."]}
+{"question_id": 539, "turns": ["Write a function to create a list containing the power of said number in bases raised to the corresponding number in the index using map function."]}
+{"question_id": 540, "turns": ["Write a python function to find the difference between highest and least frequencies in a given array."]}
+{"question_id": 541, "turns": ["Write a function to find if the given number is abundant or not."]}
+{"question_id": 542, "turns": ["Write a function to replace all occurrences of spaces, commas, or dots with a colon in the given string by using regex."]}
+{"question_id": 543, "turns": ["Write a function to add two numbers and print number of digits of sum."]}
+{"question_id": 544, "turns": ["Write a function to flatten the tuple list to a string."]}
+{"question_id": 545, "turns": ["Write a python function to toggle only first and last bits of a given number."]}
+{"question_id": 546, "turns": ["Write a function to find the last occurrence of a character in a string."]}
+{"question_id": 547, "turns": ["Write a python function to find the sum of hamming distances of all consecutive numbers from o to n."]}
+{"question_id": 548, "turns": ["Write a function to find the length of the longest increasing subsequence of the given sequence."]}
+{"question_id": 549, "turns": ["Write a python function to find the sum of fifth power of first n odd natural numbers."]}
+{"question_id": 550, "turns": ["Write a python function to find the maximum element in a sorted and rotated array."]}
+{"question_id": 551, "turns": ["Write a function to extract a specified column from a given nested list."]}
+{"question_id": 552, "turns": ["Write a python function to check whether a given sequence is linear or not."]}
+{"question_id": 553, "turns": ["Write a function to convert the given tuple to a floating-point number."]}
+{"question_id": 554, "turns": ["Write a python function to find odd numbers from a mixed list."]}
+{"question_id": 555, "turns": ["Write a python function to find the difference between sum of cubes of first n natural numbers and the sum of first n natural numbers."]}
+{"question_id": 556, "turns": ["Write a python function to count the pairs with xor as an odd number."]}
+{"question_id": 557, "turns": ["Write a function to toggle characters case in a string."]}
+{"question_id": 558, "turns": ["Write a python function to find the digit distance between two integers."]}
+{"question_id": 559, "turns": ["Write a function to find the largest sum of contiguous subarray in the given array."]}
+{"question_id": 560, "turns": ["Write a function to find the union of elements of the given tuples."]}
+{"question_id": 561, "turns": ["Write a function to assign with each element, its pair elements from other similar pairs in the given tuple."]}
+{"question_id": 562, "turns": ["Write a python function to find the maximum length of sublist."]}
+{"question_id": 563, "turns": ["Write a function to extract values between quotation marks of a string."]}
+{"question_id": 564, "turns": ["Write a python function to count unequal element pairs from the given array."]}
+{"question_id": 565, "turns": ["Write a python function to split a string into characters."]}
+{"question_id": 566, "turns": ["Write a function to get the sum of a non-negative integer."]}
+{"question_id": 567, "turns": ["Write a function to check whether a specified list is sorted or not."]}
+{"question_id": 568, "turns": ["Write a function to create a list of empty dictionaries."]}
+{"question_id": 569, "turns": ["Write a function to sort each sublist of strings in a given list of lists."]}
+{"question_id": 570, "turns": ["Write a function to remove words from a given list of strings containing a character or string."]}
+{"question_id": 571, "turns": ["Write a function to find maximum possible sum of disjoint pairs for the given array of integers and a number k."]}
+{"question_id": 572, "turns": ["Write a python function to remove two duplicate numbers from a given number of lists."]}
+{"question_id": 573, "turns": ["Write a python function to calculate the product of the unique numbers of a given list."]}
+{"question_id": 574, "turns": ["Write a function to find the surface area of a cylinder."]}
+{"question_id": 575, "turns": ["Write a python function to find nth number in a sequence which is not a multiple of a given number."]}
+{"question_id": 576, "turns": ["Write a python function to check whether an array is subarray of another or not."]}
+{"question_id": 577, "turns": ["Write a python function to find the last digit in factorial of a given number."]}
+{"question_id": 578, "turns": ["Write a function to interleave lists of the same length."]}
+{"question_id": 579, "turns": ["Write a function to find the dissimilar elements in the given two tuples."]}
+{"question_id": 580, "turns": ["Write a function to extract the even elements in the nested mixed tuple."]}
+{"question_id": 581, "turns": ["Write a python function to find the surface area of the square pyramid."]}
+{"question_id": 582, "turns": ["Write a function to check if a dictionary is empty or not."]}
+{"question_id": 583, "turns": ["Write a function for nth catalan number."]}
+{"question_id": 584, "turns": ["Write a function to find all adverbs and their positions in a given sentence by using regex."]}
+{"question_id": 585, "turns": ["Write a function to find the n - expensive price items from a given dataset using heap queue algorithm."]}
+{"question_id": 586, "turns": ["Write a python function to split the array and add the first part to the end."]}
+{"question_id": 587, "turns": ["Write a function to convert a list to a tuple."]}
+{"question_id": 588, "turns": ["Write a python function to find the difference between largest and smallest value in a given array."]}
+{"question_id": 589, "turns": ["Write a function to find perfect squares between two given numbers."]}
+{"question_id": 590, "turns": ["Write a function to convert polar coordinates to rectangular coordinates."]}
+{"question_id": 591, "turns": ["Write a python function to interchange the first and last elements in a list."]}
+{"question_id": 592, "turns": ["Write a python function to find sum of product of binomial co-efficients."]}
+{"question_id": 593, "turns": ["Write a function to remove leading zeroes from an ip address."]}
+{"question_id": 594, "turns": ["Write a function to find the difference of first even and odd number of a given list."]}
+{"question_id": 595, "turns": ["Write a python function to count minimum number of swaps required to convert one binary string to another."]}
+{"question_id": 596, "turns": ["Write a function to find the size of the given tuple."]}
+{"question_id": 597, "turns": ["Write a function to find kth element from the given two sorted arrays."]}
+{"question_id": 598, "turns": ["Write a function to check whether the given number is armstrong or not."]}
+{"question_id": 599, "turns": ["Write a function to find sum and average of first n natural numbers."]}
+{"question_id": 600, "turns": ["Write a python function to check whether the given number is even or not using bitwise operator."]}
