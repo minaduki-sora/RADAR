@@ -42,9 +42,13 @@ RADAR is a speculative sampling method improved over EAGLE-3 by RL-based dynamic
 
 ## Files
 In the `eagle/evaluations` directory, `gen_ea_we_answer_{model}.py` is the **test script** for RADAR on target model, while the rest are test scripts for EAGLE-3 and baseline.  
+
 The `eagle/data` directory contains the datasets used by EAGLE and RADAR, where `eagle/data/generate/ge_data_{model}_rb.py` is the script for generating **the offline reinforcement learning dataset** by computing the acceptance length distribution.  
+
 The **training script** for RADAR is located at `eagle/train/train_radar.py`.  
+
 The **main code** for RADAR is integrated into the EAGLE framework and can be found in the `eagle/model` folder.
+
 The **weights** for RADAR's prediction model can be found in the `weights` folder.
 
 ## Acknowledgements
