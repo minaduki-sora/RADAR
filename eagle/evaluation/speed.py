@@ -1,52 +1,52 @@
+"""Compute the speedup of generated answers over an autoregressive baseline."""
+
+import argparse
 import json
+from statistics import fmean
+
 from transformers import AutoTokenizer
-import numpy as np
-
-tokenizer=AutoTokenizer.from_pretrained("/home/lyh/weights/hf/llama2chat/13B/")
-jsonl_file = "llama-2-chat-70b-fp16-ea-in-temperature-0.0.jsonl"
-jsonl_file_base = "llama-2-chat-70b-fp16-base-in-temperature-0.0.jsonl"
-data = []
-with open(jsonl_file, 'r', encoding='utf-8') as file:
-    for line in file:
-        json_obj = json.loads(line)
-        data.append(json_obj)
 
 
-
-speeds=[]
-for datapoint in data:
-    qid=datapoint["question_id"]
-    answer=datapoint["choices"][0]['turns']
-    tokens=sum(datapoint["choices"][0]['new_tokens'])
-    times = sum(datapoint["choices"][0]['wall_time'])
-    speeds.append(tokens/times)
+def load_jsonl(path):
+    with open(path, encoding="utf-8") as file:
+        return [json.loads(line) for line in file if line.strip()]
 
 
-data = []
-with open(jsonl_file_base, 'r', encoding='utf-8') as file:
-    for line in file:
-        json_obj = json.loads(line)
-        data.append(json_obj)
+def speculative_speeds(records):
+    speeds = []
+    for record in records:
+        choice = record["choices"][0]
+        tokens = sum(choice["new_tokens"])
+        wall_time = sum(choice["wall_time"])
+        speeds.append(tokens / wall_time)
+    return speeds
 
 
-total_time=0
-total_token=0
-speeds0=[]
-for datapoint in data:
-    qid=datapoint["question_id"]
-    answer=datapoint["choices"][0]['turns']
-    tokens = 0
-    for i in answer:
-        tokens += (len(tokenizer(i).input_ids) - 1)
-    times = sum(datapoint["choices"][0]['wall_time'])
-    speeds0.append(tokens / times)
-    total_time+=times
-    total_token+=tokens
+def baseline_speeds(records, tokenizer):
+    speeds = []
+    for record in records:
+        choice = record["choices"][0]
+        tokens = sum(len(tokenizer(turn).input_ids) - 1 for turn in choice["turns"])
+        wall_time = sum(choice["wall_time"])
+        speeds.append(tokens / wall_time)
+    return speeds
 
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--tokenizer-path", required=True, help="Hugging Face model ID or local tokenizer path.")
+    parser.add_argument("--answer-file", required=True, help="RADAR or EAGLE answer JSONL file.")
+    parser.add_argument("--baseline-answer-file", required=True, help="Autoregressive baseline answer JSONL file.")
+    args = parser.parse_args()
 
-# print('speed',np.array(speeds).mean())
-# print('speed0',np.array(speeds0).mean())
-print("ratio",np.array(speeds).mean()/np.array(speeds0).mean())
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, use_fast=False)
+    candidate_speed = fmean(speculative_speeds(load_jsonl(args.answer_file)))
+    baseline_speed = fmean(baseline_speeds(load_jsonl(args.baseline_answer_file), tokenizer))
+
+    print(f"candidate tokens/s: {candidate_speed:.4f}")
+    print(f"baseline tokens/s: {baseline_speed:.4f}")
+    print(f"speedup: {candidate_speed / baseline_speed:.4f}x")
 
 
+if __name__ == "__main__":
+    main()

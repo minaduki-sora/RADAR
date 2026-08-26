@@ -320,19 +320,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/lyh/weights/hf/eagle3/DSL/8B3/",
+        default="/path/to/EAGLE3-DeepSeek-R1-Distill-LLaMA-8B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/DSL/8B/",
+    parser.add_argument("--base-model-path", type=str, default="deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
                         help="1")
     parser.add_argument(
         "--eye-model-path",
         type=str,
-        default="output/shareGPT/llama3.1/t1d7/rate2gamma0.8.pt",
+        required=True,
         help="The path to the eye model weights.",
     )
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
     parser.add_argument("--model-id", type=str, default="llama38b2_40")
     parser.add_argument(

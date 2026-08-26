@@ -7,8 +7,7 @@ import argparse
 import json
 import os
 script_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(script_dir)
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+parent_dir = os.path.dirname(os.path.dirname(script_dir))
 from accelerate.utils import set_seed
 set_seed(0)
 from datasets import Dataset, DatasetDict
@@ -159,7 +158,7 @@ def get_model_answers(
                 # total_time = time.time() - start_time
 
                 # save data
-                if hasattr(args, "save_dataset"):
+                if args.save_dataset:
                     data.extend(scores_dict_list)
 
                 output_ids = output_ids[0][len(input_ids[0]):]
@@ -212,7 +211,7 @@ def get_model_answers(
             fout.write(json.dumps(ans_json) + "\n")
 
     # save dataset
-    if hasattr(args, "save_dataset"):
+    if args.save_dataset:
         dataset = Dataset.from_list(data)
         os.makedirs(os.path.dirname(args.save_dataset), exist_ok=True)
         # dataset = dataset.train_test_split(test_size=0.2)
@@ -238,13 +237,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="../weights/eagle/EAGLE3-Vicuna1.3-13B",
+        default="/path/to/EAGLE3-Vicuna1.3-13B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="../weights/hf/vicuna-13b-v1.3",
+    parser.add_argument("--base-model-path", type=str, default="lmsys/vicuna-13b-v1.3",
                         help="1")
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
     parser.add_argument("--model-id", type=str, default="ess-vicuna-13b-fp16")
     parser.add_argument(

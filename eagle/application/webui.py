@@ -1,5 +1,4 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 import time
 
 import gradio as gr
@@ -242,10 +241,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--ea-model-path",
     type=str,
-    default="/home/lyh/weights/hf/eagle/vicuna/13B",
+    default="/path/to/EAGLE3-Vicuna1.3-13B",
     help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
 )
-parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/vicuna_v13/13B",
+parser.add_argument("--base-model-path", type=str, default="lmsys/vicuna-13b-v1.3",
                     help="path of basemodel, huggingface project or local path")
 parser.add_argument(
     "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
@@ -280,7 +279,7 @@ model = EaModel.from_pretrained(
     load_in_4bit=args.load_in_4bit,
     load_in_8bit=args.load_in_8bit,
     device_map="auto",
-    use_eagle3=args.no_eagle3,
+    use_eagle3=not args.no_eagle3,
 )
 model.eval()
 warmup(model)

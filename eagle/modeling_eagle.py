@@ -1563,15 +1563,15 @@ class EAGLE:
 
         The following models can be directly accelerated using their corresponding checkpoints.
 
-        vicuna-7b-v1.3: yuhuili/EAGLE-Vicuna-7B-v1.3
-        vicuna-13b-v1.3: yuhuili/EAGLE-Vicuna-13B-v1.3
-        vicuna-33b-v1.3: yuhuili/EAGLE-Vicuna-33B-v1.3
+        vicuna-7b-v1.3: /path/to/EAGLE-Vicuna-7B-v1.3
+        vicuna-13b-v1.3: /path/to/EAGLE-Vicuna-13B-v1.3
+        vicuna-33b-v1.3: /path/to/EAGLE-Vicuna-33B-v1.3
 
-        LLaMA2-Chat-7B: yuhuili/EAGLE-llama2-chat-7B
-        LLaMA2-Chat-13B: yuhuili/EAGLE-llama2-chat-13B
-        LLaMA2-Chat-70B: yuhuili/EAGLE-llama2-chat-70B
+        LLaMA2-Chat-7B: /path/to/EAGLE-llama2-chat-7B
+        LLaMA2-Chat-13B: /path/to/EAGLE-llama2-chat-13B
+        LLaMA2-Chat-70B: /path/to/EAGLE-llama2-chat-70B
 
-        Mixtral-8x7B-Instruct-v0.1: yuhuili/EAGLE-mixtral-instruct-8x7B
+        Mixtral-8x7B-Instruct-v0.1: /path/to/EAGLE-mixtral-instruct-8x7B
 
 
         Other models need to be trained independently.

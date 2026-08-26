@@ -8,7 +8,6 @@ import json
 import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
 
@@ -294,20 +293,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/v-yuhuili/b/res/v13/h0/checkpoints/state_1/",
+        default="/path/to/EAGLE3-Vicuna1.3-13B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/v-yuhuili/b/weights/vicuna/13B/",
+    parser.add_argument("--base-model-path", type=str, default="lmsys/vicuna-13b-v1.3",
                         help="1")
     parser.add_argument(
         "--eye-model-path",
         type=str,
-        default="output/shareGPT/llama3.1/t1d7/rate2gamma0.8.pt",
+        required=True,
         help="The path to the eye model weights.",
     )
 
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
     parser.add_argument("--model-id", type=str, default="ess-vicuna-13b-fp16")
     parser.add_argument(

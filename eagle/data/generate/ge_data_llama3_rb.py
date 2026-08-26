@@ -1,15 +1,14 @@
 """Generate answers with local models.
 
 Usage:
-python -m eagle.data.ge_data_llama3_rb --ea-model-path ../weights/eagle/EAGLE3-LLaMA3.1-Instruct-8B --base-model-path ../weights/hf/Meta-Llama-3.1-8B-Instruct --bench-name shareGPT --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --answer-file output/shareGPT/llama3.1-d7-rb.jsonl --save-dataset data/scores_rb/shareGPT-llama3-d7-topk10-t1/ --question-begin 0 --question-end 1000
+python -m eagle.data.generate.ge_data_llama3_rb --bench-name shareGPT --num-gpus-total 1 --depth 7 --top-k 10 --temperature 1.0 --answer-file output/shareGPT/llama3.1-d7-rb.jsonl --save-dataset data/scores_rb/shareGPT-llama3-d7-topk10-t1/ --question-begin 0 --question-end 1000
 """
 import argparse
 import json
 import os
 script_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(script_dir)
+parent_dir = os.path.dirname(os.path.dirname(script_dir))
 # os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
 from datasets import Dataset, DatasetDict
@@ -169,7 +168,7 @@ def get_model_answers(
                 # total_time = time.time() - start_time
 
                 # save data
-                if hasattr(args, "save_dataset"):
+                if args.save_dataset:
                     data.extend(scores_dict_list)
 
                 output_ids = output_ids[0][len(input_ids[0]):]
@@ -227,7 +226,7 @@ def get_model_answers(
             fout.write(json.dumps(ans_json) + "\n")
 
     # save dataset
-    if hasattr(args, "save_dataset"):
+    if args.save_dataset:
         dataset = Dataset.from_list(data)
         os.makedirs(os.path.dirname(args.save_dataset), exist_ok=True)
         dataset = dataset.train_test_split(test_size=0.2)
@@ -253,13 +252,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/lyh/weights/hf/eagle3/llama31chat/8B/",
+        default="/path/to/EAGLE3-LLaMA3.1-Instruct-8B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/llama31chat/8B/",
+    parser.add_argument("--base-model-path", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct",
                         help="1")
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
     parser.add_argument("--model-id", type=str, default="vicuna1.3 13B")
     parser.add_argument(

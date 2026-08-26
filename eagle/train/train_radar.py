@@ -16,7 +16,6 @@ import itertools
 from tqdm import tqdm
 
 # --- 全局设置 ---
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- 模型定义 ---
@@ -387,7 +386,7 @@ def train_and_evaluate(params, train_loader, test_loader, project_root):
 
 # --- 主程序 ---
 if __name__ == '__main__':
-    print("CUDA_VISIBLE_DEVICES:",os.environ["CUDA_VISIBLE_DEVICES"])
+    print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES", "not set"))
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
     print(f"Project Root correctly detected: {PROJECT_ROOT}")
@@ -404,7 +403,7 @@ if __name__ == '__main__':
         return os.path.normpath(os.path.join(PROJECT_ROOT, path_from_config))
 
     parser = argparse.ArgumentParser(description="Train a policy model with hyperparameter grid search from a config file.")
-    parser.add_argument('--config', type=str, default='eagle/train/train_debug.json', help='Path to the configuration JSON file.')
+    parser.add_argument('--config', type=str, default='eagle/train/eye_llama3-2.json', help='Path to the configuration JSON file.')
     args = parser.parse_args()
 
     # 3. --- 加载配置 ---

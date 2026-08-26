@@ -8,7 +8,6 @@ import json
 import os
 script_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(script_dir)
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 from accelerate.utils import set_seed
 set_seed(0)
 
@@ -322,13 +321,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="/home/lyh/weights/hf/eagle3/llama31chat/8B/",
+        default="/path/to/EAGLE3-LLaMA3.1-Instruct-8B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/llama31chat/8B/",
+    parser.add_argument("--base-model-path", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct",
                         help="1")
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
     parser.add_argument("--model-id", type=str, default="llama38b2_40")
     parser.add_argument(

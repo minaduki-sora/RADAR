@@ -347,15 +347,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ea-model-path",
         type=str,
-        default="down_checkpoints/LC70B",
+        default="/path/to/EAGLE3-Vicuna1.3-13B",
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
-    parser.add_argument("--base-model-path", type=str, default="/home/lyh/weights/hf/llama2chat/70B/",
+    parser.add_argument("--base-model-path", type=str, default="lmsys/vicuna-13b-v1.3",
                         help="1")
     parser.add_argument(
-        "--load-in-8bit", action="store_false", help="Use 8-bit quantization"
+        "--load-in-8bit", action="store_true", help="Use 8-bit quantization"
     )
-    parser.add_argument("--model-id", type=str, default="ess-vicuna-70b-fp16-baseline")
+    parser.add_argument("--model-id", type=str, default="vicuna-13b-baseline")
     parser.add_argument(
         "--bench-name",
         type=str,
