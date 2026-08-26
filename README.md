@@ -130,7 +130,6 @@ For a profile collected with a fixed maximum depth `maxlen`, compute
 ```text
 eagen_minus_time = avg_eagen_time - eaforward_time * maxlen
 beta_raw          = eaforward_time + eye_time
-rate              = eagen_minus_time / beta_raw
 ```
 
 Here, `avg_eagen_time` is the mean EAGLE generation-cycle latency at `maxlen`. The raw $\beta$ is the marginal latency of one draft-policy step and normalizes the terminal throughput reward:
@@ -149,7 +148,7 @@ alpha = 10 * alpha_raw
 
 Scaling both coefficients by the same factor preserves their relative trade-off and the optimal policy while increasing the overall reward and gradient scale. If this scale is changed, scale `alpha` and `beta` together. For example, the LLaMA configuration uses `eaforward_time = 0.002684` and `eye_time = 0.0004`, giving `beta_raw = 0.003084` and the configured `beta = 0.03084`.
 
-Profile after model warm-up, use the same model placement, precision, batch size, tree depth, and GPU setup as deployment, synchronize CUDA immediately before and after each timed region, and average multiple post-warm-up runs. Do not reuse the example latency values on a different device.
+Profile after model warm-up, use the same model placement, precision, batch size, tree depth, and GPU setup as deployment, synchronize CUDA immediately before and after each timed region, and average multiple post-warm-up runs. **Do not reuse the example latency values on a different device.**
 
 Update these values for the deployment device and verify `dataset_path`. Then run:
 
