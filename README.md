@@ -119,11 +119,37 @@ Use `ge_data_vicuna_rb` or `ge_data_ds_rb` for the other target models.
 
 ### 3. Configure latency and train
 
-The files in `eagle/train/eye_*.json` define the policy hyperparameter grid and the profiled latency terms:
+The files in `eagle/train/eye_*.json` define the policy hyperparameter grid and the profiled latency terms. All latency values are measured in seconds on the deployment device:
 
-- `eagen_minus_time`: fixed drafting/verification overhead;
-- `eaforward_time`: latency of one draft-model forward pass;
-- `eye_time`: latency of one RADAR-policy forward pass.
+- `eaforward_time` ($T_d$): mean latency of one EAGLE draft-model forward pass;
+- `eye_time` ($T_p$): mean latency of one RADAR-policy forward pass;
+- `eagen_minus_time` ($T_o$): the fixed residual overhead after subtracting all draft-model forward passes from the mean EAGLE generation-cycle latency.
+
+For a profile collected with a fixed maximum depth `maxlen`, compute
+
+```text
+eagen_minus_time = avg_eagen_time - eaforward_time * maxlen
+beta_raw          = eaforward_time + eye_time
+rate              = eagen_minus_time / beta_raw
+```
+
+Here, `avg_eagen_time` is the mean EAGLE generation-cycle latency at `maxlen`. The raw $\beta$ is the marginal latency of one draft-policy step and normalizes the terminal throughput reward:
+
+```text
+terminal_reward = beta * accepted_length / estimated_generation_time
+continue_reward = -alpha
+```
+
+The released `eye_*-2.json` configurations intentionally use a reward scale of 10:
+
+```text
+beta  = 10 * beta_raw
+alpha = 10 * alpha_raw
+```
+
+Scaling both coefficients by the same factor preserves their relative trade-off and the optimal policy while increasing the overall reward and gradient scale. If this scale is changed, scale `alpha` and `beta` together. For example, the LLaMA configuration uses `eaforward_time = 0.002684` and `eye_time = 0.0004`, giving `beta_raw = 0.003084` and the configured `beta = 0.03084`.
+
+Profile after model warm-up, use the same model placement, precision, batch size, tree depth, and GPU setup as deployment, synchronize CUDA immediately before and after each timed region, and average multiple post-warm-up runs. Do not reuse the example latency values on a different device.
 
 Update these values for the deployment device and verify `dataset_path`. Then run:
 
