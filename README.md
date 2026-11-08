@@ -195,4 +195,25 @@ RADAR is built on the [EAGLE project](https://github.com/SafeAILab/EAGLE). We th
 
 ## Citation
 
-The official Findings of EMNLP 2026 citation will be added when the proceedings metadata becomes available.
+```
+@inproceedings{ma-etal-2026-radar-accelerate,
+    title = "{RADAR}: Accelerate Large Language Model Inference with {RL}-Based Dynamic Draft Trees",
+    author = "Ma, Junjie  and
+      Li, Jinlong  and
+      Luo, Jiajun",
+    editor = "Lee, Hung-Yi  and
+      Dev, Sunipa  and
+      Li, Jessy  and
+      Elliott, Desmond",
+    booktitle = "Findings of the {A}ssociation for {C}omputational {L}inguistics: {EMNLP} 2026",
+    month = oct,
+    year = "2026",
+    address = "Budapest, Hungary",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.findings-emnlp.1610/",
+    doi = "10.18653/2026.findings-emnlp.1610",
+    pages = "34289--34301",
+    ISBN = "979-8-89176-462-0",
+    abstract = "Inference with modern Large Language Models (LLMs) is expensive and slow, and speculative sampling has emerged as an effective solution to this problem. However, the number of calls to the draft model for generating candidate tokens in speculative sampling is a preset hyperparameter, lacking flexibility. To generate and utilize the candidate tokens more effectively, we propose RADAR, a novel speculative sampling method with RL-based dynamic draft trees. RADAR formulates the draft tree generation process as a Markov Decision Process (MDP) and employs offline reinforcement learning to train a prediction model, which enables real-time decisions on calls to the draft model, reducing redundant computations and further accelerating inference. Evaluations across three LLMs and four tasks show that RADAR achieves a speedup of 3.17x-4.82x over the auto-regressive decoding baseline."
+}
+```
